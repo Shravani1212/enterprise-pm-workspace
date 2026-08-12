@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pm-backend-config
+  namespace: enterprise-pm
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service.enterprise-pm.svc.cluster.local:5432/enterprise_pm_db"
+  SPRING_DATA_REDIS_HOST: "redis-service.enterprise-pm.svc.cluster.local"
+  SPRING_DATA_REDIS_PORT: "6379"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-service.enterprise-pm.svc.cluster.local:9092"

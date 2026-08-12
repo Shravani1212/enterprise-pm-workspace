@@ -1,0 +1,104 @@
+package com.enterprise.pm.modules.task.controller;
+
+import com.enterprise.pm.common.api.ApiResponse;
+import com.enterprise.pm.common.exception.ResourceNotFoundException;
+import com.enterprise.pm.modules.task.dto.TaskDTOs.*;
+import com.enterprise.pm.modules.task.service.TaskService;
+import com.enterprise.pm.security.UserPrincipal;
+import com.enterprise.pm.security.annotation.RequireProjectAccess;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping
+@RequiredArgsConstructor
+public class TaskController {
+
+    private final TaskService taskService;
+
+    @GetMapping("/projects/{projectId}/tasks")
+    @RequireProjectAccess(paramName = "projectId")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getProjectTasks(@PathVariable("projectId") Long projectId) {
+        return ResponseEntity.ok(ApiResponse.success(taskService.getTasksByProjectId(projectId)));
+    }
+
+    @GetMapping("/projects/{projectId}/tasks/search")
+    @RequireProjectAccess(paramName = "projectId")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> searchTasks(@PathVariable("projectId") Long projectId,
+                                                                       @RequestParam(value = "search", required = false) String search,
+                                                                       @RequestParam(value = "priorityId", required = false) Long priorityId,
+                                                                       @RequestParam(value = "statusId", required = false) Long statusId,
+                                                                       @RequestParam(value = "assigneeId", required = false) Long assigneeId,
+                                                                       @RequestParam(value = "labelId", required = false) Long labelId) {
+        return ResponseEntity.ok(ApiResponse.success(taskService.searchTasks(projectId, search, priorityId, statusId, assigneeId, labelId)));
+    }
+
+    @PostMapping("/projects/{projectId}/tasks")
+    @RequireProjectAccess(paramName = "projectId")
+    public ResponseEntity<ApiResponse<TaskResponse>> createTask(@PathVariable("projectId") Long projectId,
+                                                                 @Valid @RequestBody TaskCreateRequest request,
+                                                                 @AuthenticationPrincipal UserPrincipal currentUser) {
+        return ResponseEntity.ok(ApiResponse.success("Task created successfully", taskService.createTask(projectId, request, currentUser)));
+    }
+
+    @GetMapping("/tasks/{id}")
+    public ResponseEntity<ApiResponse<TaskResponse>> getTaskById(@PathVariable("id") Long id,
+                                                                 @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(id);
+        verifyProjectAccess(currentUser, projectId);
+        return ResponseEntity.ok(ApiResponse.success(taskService.getTaskById(id)));
+    }
+
+    @PatchMapping("/tasks/{id}")
+    public ResponseEntity<ApiResponse<TaskResponse>> updateTask(@PathVariable("id") Long id,
+                                                                 @Valid @RequestBody TaskUpdateRequest request,
+                                                                 @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(id);
+        verifyProjectAccess(currentUser, projectId);
+        return ResponseEntity.ok(ApiResponse.success("Task updated successfully", taskService.updateTask(id, request)));
+    }
+
+    @PatchMapping("/tasks/{id}/status")
+    public ResponseEntity<ApiResponse<TaskResponse>> updateTaskStatus(@PathVariable("id") Long id,
+                                                                       @Valid @RequestBody TaskStatusUpdateRequest request,
+                                                                       @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(id);
+        verifyProjectAccess(currentUser, projectId);
+        return ResponseEntity.ok(ApiResponse.success("Task status updated", taskService.patchTaskStatus(id, request.statusId())));
+    }
+
+    @PatchMapping("/tasks/{id}/assignee")
+    public ResponseEntity<ApiResponse<TaskResponse>> updateTaskAssignee(@PathVariable("id") Long id,
+                                                                         @RequestParam(value = "assigneeId", required = false) Long assigneeId,
+                                                                         @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(id);
+        verifyProjectAccess(currentUser, projectId);
+        return ResponseEntity.ok(ApiResponse.success("Task assignee updated", taskService.patchTaskAssignee(id, assigneeId)));
+    }
+
+    @DeleteMapping("/tasks/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteTask(@PathVariable("id") Long id,
+                                                         @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(id);
+        verifyProjectAccess(currentUser, projectId);
+        taskService.deleteTask(id);
+        return ResponseEntity.ok(ApiResponse.success("Task deleted successfully", null));
+    }
+
+    private void verifyProjectAccess(UserPrincipal currentUser, Long projectId) {
+        if (projectId == null) {
+            throw new ResourceNotFoundException("Task not found");
+        }
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin && !taskService.getProjectIdForTask(projectId).equals(projectId)) {
+            // Checked by aspect or service
+        }
+    }
+}

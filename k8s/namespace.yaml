@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-pm
+  labels:
+    environment: production
+    app: enterprise-pm-workspace
