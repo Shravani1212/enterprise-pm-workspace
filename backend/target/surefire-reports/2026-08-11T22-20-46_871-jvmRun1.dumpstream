@@ -1,3 +1,0 @@
-# Created at 2026-08-11T22:20:48.855
-java.lang.UnsupportedClassVersionError: org/springframework/kafka/test/junit/GlobalEmbeddedKafkaTestExecutionListener has been compiled by a more recent version of the Java Runtime (class file version 61.0), this version of the Java Runtime only recognizes class file versions up to 60.0
-

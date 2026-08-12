@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. PostgreSQL Relational Database
   postgres:
@@ -62,7 +60,7 @@ services:
   # 4. Spring Boot Backend Microservice
   backend:
     build:
-      context: ./backend
+      context: ./mini-jira-backend
       dockerfile: Dockerfile
     container_name: pm-backend
     ports:
@@ -86,7 +84,7 @@ services:
   # 5. React Frontend Nginx Web Server
   frontend:
     build:
-      context: ./frontend
+      context: ./mini-jira-frontend
       dockerfile: Dockerfile
     container_name: pm-frontend
     ports:
