@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: enterprise-pm-backend
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+app:
+  storage:
+    upload-dir: ${FILE_UPLOAD_DIR:C:/enterprise-pm/attachments}
