@@ -46,38 +46,38 @@ export const DashboardPage: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Fetch projects
-      const projectsRes = await apiClient.get<ApiResponse<Project[]>>('/projects');
-      const fetchedProjects = projectsRes.data.success && projectsRes.data.data ? projectsRes.data.data : [];
+
+      const promises: [
+        Promise<any>,
+        Promise<any>,
+        Promise<any>
+      ] = [
+        apiClient.get<ApiResponse<Project[]>>('/projects'),
+        apiClient.get<ApiResponse<Task[]>>('/tasks').catch(() => ({ data: { success: false, data: [] } })),
+        (isSystemAdmin || isProjectManager)
+          ? apiClient.get<ApiResponse<User[]>>('/users').catch(() => ({ data: { success: false, data: [] } }))
+          : Promise.resolve({ data: { success: false, data: [] } })
+      ];
+
+      const [projectsRes, tasksRes, usersRes] = await Promise.all(promises);
+
+      const fetchedProjects = projectsRes.data?.success && projectsRes.data?.data ? projectsRes.data.data : [];
       setProjects(fetchedProjects);
 
-      // Fetch users if Admin or PM
-      if (isSystemAdmin || isProjectManager) {
-        try {
-          const usersRes = await apiClient.get<ApiResponse<User[]>>('/users');
-          if (usersRes.data.success && usersRes.data.data) {
-            setUsers(usersRes.data.data);
-          }
-        } catch (e) {
-          // Fallback if users endpoint fails
-        }
+      if (tasksRes.data?.success && tasksRes.data?.data) {
+        setTasks(tasksRes.data.data);
+      } else if (fetchedProjects.length > 0) {
+        // Parallel fallback per project if /tasks fails
+        const taskRequests = fetchedProjects.map((p: Project) =>
+          apiClient.get<ApiResponse<Task[]>>(`/projects/${p.id}/tasks`).catch(() => null)
+        );
+        const taskResponses = await Promise.all(taskRequests);
+        const aggregated = taskResponses.flatMap((res) => (res?.data?.success && res.data.data ? res.data.data : []));
+        setTasks(aggregated);
       }
 
-      // Fetch tasks across projects
-      if (fetchedProjects.length > 0) {
-        let allTasks: Task[] = [];
-        for (const proj of fetchedProjects) {
-          try {
-            const taskRes = await apiClient.get<ApiResponse<Task[]>>(`/projects/${proj.id}/tasks`);
-            if (taskRes.data.success && taskRes.data.data) {
-              allTasks = [...allTasks, ...taskRes.data.data];
-            }
-          } catch (e) {
-            // Ignore error for individual project tasks
-          }
-        }
-        setTasks(allTasks);
+      if (usersRes.data?.success && usersRes.data?.data) {
+        setUsers(usersRes.data.data);
       }
     } catch (err) {
       console.error('Failed to load dynamic dashboard data', err);

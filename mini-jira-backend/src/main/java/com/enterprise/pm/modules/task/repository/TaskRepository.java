@@ -22,6 +22,21 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
            "WHERE t.project.id = :projectId")
     List<Task> findAllByProjectIdWithDetails(@Param("projectId") Long projectId);
 
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "JOIN FETCH t.status " +
+           "JOIN FETCH t.priority " +
+           "LEFT JOIN FETCH t.assignee " +
+           "LEFT JOIN FETCH t.subtasks")
+    List<Task> findAllWithDetails();
+
+    @Query("SELECT DISTINCT t FROM Task t " +
+           "JOIN FETCH t.status " +
+           "JOIN FETCH t.priority " +
+           "LEFT JOIN FETCH t.assignee " +
+           "LEFT JOIN FETCH t.subtasks " +
+           "WHERE t.project.id IN (SELECT pm.project.id FROM ProjectMember pm WHERE pm.user.id = :userId AND pm.active = true)")
+    List<Task> findAllByUserIdWithDetails(@Param("userId") Long userId);
+
     @EntityGraph(attributePaths = {"status", "priority", "assignee", "subtasks", "labels"})
     Optional<Task> findWithDetailsById(Long id);
 }

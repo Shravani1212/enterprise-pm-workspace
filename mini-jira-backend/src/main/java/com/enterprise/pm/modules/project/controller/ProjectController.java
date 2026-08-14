@@ -46,6 +46,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{id}/members")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<ProjectMemberResponse>> addProjectMember(@PathVariable("id") Long id,
                                                                                 @Valid @RequestBody AddMemberRequest request) {
@@ -53,6 +54,7 @@ public class ProjectController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(@PathVariable("id") Long id,
                                                                        @Valid @RequestBody ProjectUpdateRequest request) {
@@ -60,6 +62,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable("id") Long id) {
         projectService.deleteProject(id);
@@ -67,6 +70,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}/members/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<Void>> removeProjectMember(@PathVariable("id") Long id,
                                                                  @PathVariable("userId") Long userId) {

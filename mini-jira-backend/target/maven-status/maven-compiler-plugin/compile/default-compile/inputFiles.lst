@@ -18,6 +18,7 @@ C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\s
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\ai\controller\AiAssistantController.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\ai\service\AiAssistantService.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\controller\AuthController.java
+C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\controller\UserController.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\dto\AuthDTOs.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\entity\Permission.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\entity\RefreshToken.java

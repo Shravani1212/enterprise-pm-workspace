@@ -45,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Ignore logout API errors
     } finally {
       localStorage.removeItem('user');
+      sessionStorage.clear();
       setUser(null);
     }
   };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { 
   FolderKanban, 
   LayoutDashboard, 
@@ -22,6 +22,7 @@ export const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { projectId } = useParams();
+  const location = useLocation();
   const [firstProjectId, setFirstProjectId] = useState<string>('1');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -85,7 +86,7 @@ export const Sidebar: React.FC = () => {
             </NavLink>
 
             <NavLink
-              to={`/projects/${activeProjectId}/board`}
+              to="/projects"
               className={({ isActive }) =>
                 `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
                   isActive
@@ -95,21 +96,22 @@ export const Sidebar: React.FC = () => {
               }
             >
               <FolderKanban style={{ width: '18px', height: '18px' }} />
-              <span>Kanban Board</span>
+              <span>Projects & Sprints</span>
             </NavLink>
 
             <NavLink
-              to={`/projects/${activeProjectId}/gantt`}
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isActive
+              to={`/projects/${activeProjectId}/board`}
+              className={({ isActive }) => {
+                const isProjectViewActive = isActive || location.pathname.includes('/gantt');
+                return `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isProjectViewActive
                     ? 'bg-gradient-primary text-white shadow-sm'
                     : 'text-secondary hover-bg-light'
-                }`
-              }
+                }`;
+              }}
             >
-              <GanttChartSquare style={{ width: '18px', height: '18px' }} />
-              <span>Gantt Timeline</span>
+              <Layers style={{ width: '18px', height: '18px' }} />
+              <span>Project Workspace</span>
             </NavLink>
 
             <NavLink
@@ -126,7 +128,7 @@ export const Sidebar: React.FC = () => {
               <span>Project Members</span>
             </NavLink>
 
-            {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN' || r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') && (
+            {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
               <NavLink
                 to="/users"
                 className={({ isActive }) =>

@@ -51,6 +51,20 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
+    public List<TaskResponse> getAllTasksForUser(UserPrincipal currentUser) {
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        List<Task> tasks = isAdmin
+                ? taskRepository.findAllWithDetails()
+                : taskRepository.findAllByUserIdWithDetails(currentUser.getId());
+
+        return tasks.stream()
+                .map(TaskMapper::toTaskResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<TaskResponse> searchTasks(Long projectId, String search, Long priorityId, Long statusId, Long assigneeId, Long labelId) {
         org.springframework.data.jpa.domain.Specification<Task> spec = 
                 com.enterprise.pm.modules.task.specification.TaskSpecification.filterTasks(projectId, search, priorityId, statusId, assigneeId, labelId);

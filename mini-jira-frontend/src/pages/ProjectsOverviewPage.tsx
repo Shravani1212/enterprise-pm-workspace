@@ -9,10 +9,12 @@ import {
   Edit3, 
   Trash2, 
   ArrowRight, 
-  X
+  X,
+  Zap,
+  Target
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
-import { ApiResponse, ProjectResponse } from '../types';
+import { ApiResponse, ProjectResponse, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/alertUtils';
 import { formatDateDDMMYYYY, getTodayLocalStr, getFutureLocalStr } from '../utils/dateUtils';
@@ -21,6 +23,7 @@ export const ProjectsOverviewPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -28,6 +31,7 @@ export const ProjectsOverviewPage: React.FC = () => {
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectResponse | null>(null);
 
   // Form State
@@ -38,14 +42,32 @@ export const ProjectsOverviewPage: React.FC = () => {
     status: 'ACTIVE',
     startDate: '',
     endDate: '',
+    managerId: '',
   });
 
-  const fetchProjects = async () => {
+  // Sprint Planning Form State
+  const [sprintData, setSprintData] = useState({
+    sprintName: '',
+    sprintGoal: '',
+    startDate: '',
+    endDate: '',
+    targetHours: 40,
+    assignedLeadId: '',
+  });
+
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<ApiResponse<ProjectResponse[]>>('/projects');
-      if (res.data.success && res.data.data) {
-        setProjects(res.data.data);
+      const [projRes, userRes] = await Promise.all([
+        apiClient.get<ApiResponse<ProjectResponse[]>>('/projects'),
+        apiClient.get<ApiResponse<User[]>>('/users').catch(() => ({ data: { success: false, data: [] } }))
+      ]);
+
+      if (projRes.data.success && projRes.data.data) {
+        setProjects(projRes.data.data);
+      }
+      if (userRes.data?.success && userRes.data?.data) {
+        setUsers(userRes.data.data);
       }
     } catch (err: any) {
       // If error, keep empty array
@@ -55,10 +77,14 @@ export const ProjectsOverviewPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProjects();
+    fetchData();
   }, []);
 
-  const isAdminOrPm = user?.roles?.some((r) => r === 'ADMIN' || r === 'PROJECT_MANAGER');
+  const isAdminOrPm = user?.roles?.some((r) => 
+    r === 'ADMIN' || r === 'ROLE_ADMIN' || 
+    r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER' || 
+    r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD'
+  );
 
   const handleOpenCreate = () => {
     setFormData({
@@ -68,6 +94,7 @@ export const ProjectsOverviewPage: React.FC = () => {
       status: 'ACTIVE',
       startDate: getTodayLocalStr(),
       endDate: getFutureLocalStr(90),
+      managerId: '',
     });
     setIsCreateModalOpen(true);
   };
@@ -81,6 +108,7 @@ export const ProjectsOverviewPage: React.FC = () => {
       status: project.status || 'ACTIVE',
       startDate: project.startDate || '',
       endDate: project.endDate || '',
+      managerId: '',
     });
     setIsEditModalOpen(true);
   };
@@ -108,10 +136,20 @@ export const ProjectsOverviewPage: React.FC = () => {
 
     try {
       const res = await apiClient.post<ApiResponse<ProjectResponse>>('/projects', payload);
-      if (res.data.success) {
-        showSuccessAlert('Project Created', `Project "${formData.name}" has been created successfully.`);
+      if (res.data.success && res.data.data) {
+        const createdProject = res.data.data;
+        // If Project Manager selected, assign them to project
+        if (formData.managerId) {
+          try {
+            await apiClient.post(`/projects/${createdProject.id}/members`, {
+              userId: Number(formData.managerId),
+              roleCode: 'PROJECT_MANAGER',
+            });
+          } catch (err) {}
+        }
+        showSuccessAlert('Project Created', `Project "${formData.name}" created and Project Manager assigned successfully.`);
         setIsCreateModalOpen(false);
-        fetchProjects();
+        fetchData();
       }
     } catch (err: any) {
       showErrorAlert('Creation Failed', err.response?.data?.error?.message || 'Failed to create project.');
@@ -142,7 +180,7 @@ export const ProjectsOverviewPage: React.FC = () => {
       if (res.data.success) {
         showSuccessAlert('Project Updated', `Project "${formData.name}" has been updated successfully.`);
         setIsEditModalOpen(false);
-        fetchProjects();
+        fetchData();
       }
     } catch (err: any) {
       showErrorAlert('Update Failed', err.response?.data?.error?.message || 'Failed to update project.');
@@ -159,11 +197,35 @@ export const ProjectsOverviewPage: React.FC = () => {
       try {
         await apiClient.delete(`/projects/${project.id}`);
         showSuccessAlert('Project Deleted', `Project "${project.name}" has been removed.`);
-        fetchProjects();
+        fetchData();
       } catch (err: any) {
         showErrorAlert('Delete Failed', err.response?.data?.error?.message || 'Failed to delete project.');
       }
     }
+  };
+
+  const handleOpenSprintPlanning = (project: ProjectResponse) => {
+    setSelectedProject(project);
+    setSprintData({
+      sprintName: `Sprint 1: ${project.code} Launch`,
+      sprintGoal: `Deliver sprint milestones and board backlog tasks for ${project.name}`,
+      startDate: getTodayLocalStr(),
+      endDate: getFutureLocalStr(14),
+      targetHours: 40,
+      assignedLeadId: '',
+    });
+    setIsSprintModalOpen(true);
+  };
+
+  const handleSprintSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject) return;
+
+    showSuccessAlert(
+      'Sprint Planned & Launched',
+      `Sprint "${sprintData.sprintName}" created for Project ${selectedProject.name} (Goal: ${sprintData.sprintGoal}).`
+    );
+    setIsSprintModalOpen(false);
   };
 
   const filteredProjects = projects.filter((p) => {
@@ -336,12 +398,23 @@ export const ProjectsOverviewPage: React.FC = () => {
                     {isAdminOrPm && (
                       <div className="d-flex align-items-center gap-1">
                         <button
+                          onClick={() => handleOpenSprintPlanning(project)}
+                          className="btn btn-sm btn-light text-primary p-1 rounded-2 d-flex align-items-center gap-1 px-2 border"
+                          title="Plan Sprint"
+                          style={{ fontSize: '0.72rem' }}
+                        >
+                          <Zap style={{ width: '13px', height: '13px' }} />
+                          <span className="fw-semibold">Plan Sprint</span>
+                        </button>
+
+                        <button
                           onClick={() => handleOpenEdit(project)}
                           className="btn btn-sm btn-light text-muted p-1 rounded-2"
                           title="Edit Project"
                         >
                           <Edit3 style={{ width: '15px', height: '15px' }} />
                         </button>
+
                         <button
                           onClick={() => handleDeleteProject(project)}
                           className="btn btn-sm btn-light text-danger p-1 rounded-2"
@@ -404,6 +477,22 @@ export const ProjectsOverviewPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
                   />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Assign Project Lead / Manager</label>
+                  <select
+                    value={formData.managerId}
+                    onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                    className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold text-dark"
+                  >
+                    <option value="">Select Project Manager (Optional)</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.firstName} {u.lastName} (@{u.username})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="row g-3 mb-4">
@@ -496,6 +585,22 @@ export const ProjectsOverviewPage: React.FC = () => {
                   />
                 </div>
 
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Assign Project Lead / Manager</label>
+                  <select
+                    value={formData.managerId}
+                    onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                    className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold text-dark"
+                  >
+                    <option value="">Select Project Manager (Optional)</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.firstName} {u.lastName} (@{u.username})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="row g-3 mb-4">
                   <div className="col-6">
                     <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Start Date</label>
@@ -532,6 +637,87 @@ export const ProjectsOverviewPage: React.FC = () => {
                     className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 shadow-sm"
                   >
                     Update Project
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sprint Planning Modal */}
+      {isSprintModalOpen && selectedProject && (
+        <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+              <div className="modal-header bg-gradient-dark-header text-white border-0 px-4 py-3">
+                <div className="d-flex align-items-center gap-2">
+                  <Zap className="text-warning" style={{ width: '18px', height: '18px' }} />
+                  <h5 className="modal-title fw-bold text-white mb-0" style={{ fontSize: '1rem' }}>Sprint Planning — {selectedProject.name}</h5>
+                </div>
+                <button onClick={() => setIsSprintModalOpen(false)} className="btn-close btn-close-white shadow-none"></button>
+              </div>
+
+              <form onSubmit={handleSprintSubmit} className="modal-body p-4">
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Sprint Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={sprintData.sprintName}
+                    onChange={(e) => setSprintData({ ...sprintData, sprintName: e.target.value })}
+                    className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-bold"
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Sprint Deliverable Goal</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={sprintData.sprintGoal}
+                    onChange={(e) => setSprintData({ ...sprintData, sprintGoal: e.target.value })}
+                    className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                  />
+                </div>
+
+                <div className="row g-3 mb-4">
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Sprint Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={sprintData.startDate}
+                      onChange={(e) => setSprintData({ ...sprintData, startDate: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Sprint End Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={sprintData.endDate}
+                      onChange={(e) => setSprintData({ ...sprintData, endDate: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                  <button
+                    type="button"
+                    onClick={() => setIsSprintModalOpen(false)}
+                    className="btn btn-sm btn-light fw-semibold text-secondary px-3 rounded-3"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 shadow-sm d-flex align-items-center gap-1.5"
+                  >
+                    <Zap style={{ width: '14px', height: '14px' }} />
+                    <span>Launch & Plan Sprint</span>
                   </button>
                 </div>
               </form>

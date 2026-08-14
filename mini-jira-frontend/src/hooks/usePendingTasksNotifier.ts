@@ -6,23 +6,28 @@ import Swal from 'sweetalert2';
 
 export const usePendingTasksNotifier = () => {
   const { user } = useAuth();
-  const notifiedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!user || notifiedRef.current === user.username) return;
+    if (!user) return;
+
+    const storageKey = `hasNotifiedPendingTasks_${user.username}`;
+    if (sessionStorage.getItem(storageKey) === 'true') {
+      return;
+    }
 
     const checkPendingTasks = async () => {
       try {
         const res = await apiClient.get<ApiResponse<TaskResponse[]>>('/tasks');
         if (!res.data.success || !res.data.data) return;
 
+        // Mark as notified in sessionStorage immediately so it NEVER pops up again on route navigation
+        sessionStorage.setItem(storageKey, 'true');
+
         const allTasks = res.data.data;
         const userRoles = user.roles || [];
         const isDeveloper = userRoles.includes('DEVELOPER');
         const isPM = userRoles.includes('PROJECT_MANAGER');
         const isAdmin = userRoles.includes('ADMIN');
-
-        notifiedRef.current = user.username;
 
         // 1. ADMIN ESCALATION NOTIFICATION
         if (isAdmin) {

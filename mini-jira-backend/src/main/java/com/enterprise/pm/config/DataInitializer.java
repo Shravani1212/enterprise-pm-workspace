@@ -58,12 +58,13 @@ public class DataInitializer implements CommandLineRunner {
         // 1. Ensure Roles
         Role adminRole = getOrCreateRole("ADMIN", "Administrator", "Full system administration access");
         Role pmRole = getOrCreateRole("PROJECT_MANAGER", "Project Manager", "Project and team management access");
+        Role leadRole = getOrCreateRole("PROJECT_LEAD", "Project Lead", "Project leadership, task creation and assignment access");
         Role devRole = getOrCreateRole("DEVELOPER", "Developer", "Engineering task execution access");
 
-        // 2. Ensure Task Statuses
-        TaskStatus todoStatus = getOrCreateStatus("TODO", "To Do", 1);
-        TaskStatus inProgressStatus = getOrCreateStatus("IN_PROGRESS", "In Progress", 2);
-        TaskStatus inReviewStatus = getOrCreateStatus("IN_REVIEW", "In Review", 3);
+        // 2. Ensure Task Statuses (Backlog, To Do, In Progress, Done as specified in document)
+        TaskStatus backlogStatus = getOrCreateStatus("BACKLOG", "Backlog", 1);
+        TaskStatus todoStatus = getOrCreateStatus("TODO", "To Do", 2);
+        TaskStatus inProgressStatus = getOrCreateStatus("IN_PROGRESS", "In Progress", 3);
         TaskStatus doneStatus = getOrCreateStatus("DONE", "Done", 4);
 
         // 3. Ensure Priorities
@@ -83,6 +84,7 @@ public class DataInitializer implements CommandLineRunner {
         // 5. Seed Users if count == 0 or missing
         User admin = createUserIfAbsent("admin", "admin@enterprise.com", "admin123", "System", "Admin", adminRole);
         User pmUser = createUserIfAbsent("pm_user", "pm@enterprise.com", "pm123", "Project", "Manager", pmRole);
+        User leadUser = createUserIfAbsent("lead_user", "lead@enterprise.com", "lead123", "Project", "Lead", leadRole);
         User devUser = createUserIfAbsent("dev_user", "dev@enterprise.com", "dev123", "Lead", "Developer", devRole);
         User sarahPm = createUserIfAbsent("sarah_pm", "sarah@enterprise.com", "sarah123", "Sarah", "Jenkins", pmRole);
         User alexDev = createUserIfAbsent("alex_dev", "alex@enterprise.com", "alex123", "Alex", "Rivera", devRole);
@@ -180,10 +182,29 @@ public class DataInitializer implements CommandLineRunner {
                     "Vault integration for production cluster DB credentials expired.",
                     todoStatus, highPriority, alexDev, pmUser, twoWeeksAgo, 12, 4, "DEVELOPER_WARNING", Set.of(devopsLabel, securityLabel));
 
-            // Active Tasks
-            Task t4 = createTaskWithTime(p1, "Design Modern Glassmorphism Dashboard Layout",
-                    "Create clean responsive dashboard with dark mode support and interactive action cards.",
-                    inReviewStatus, mediumPriority, devUser, admin, fiveDaysAgo, 20, 16, "NONE", Set.of(frontendLabel));
+            // Demo Tasks matching exact specification mock (Backlog, To Do, In Progress, Done)
+            Task tb1 = createTaskWithTime(p1, "Gantt dependency arrows",
+                    "Draw finish-to-start links between dependent tasks across board and timeline.",
+                    backlogStatus, lowPriority, alexDev, admin, fiveDaysAgo, 16, 0, "NONE", Set.of(frontendLabel));
+            addSubtask(tb1, "Calculate arrow SVG coordinates", false);
+            addSubtask(tb1, "Render bezier curves on canvas", false);
+
+            Task tb2 = createTaskWithTime(p1, "Optimistic drag rollback",
+                    "Roll a card back to its origin column when the API rejects the status change move.",
+                    backlogStatus, mediumPriority, devUser, pmUser, fiveDaysAgo, 12, 12, "NONE", Set.of(frontendLabel, backendLabel));
+            addSubtask(tb2, "Capture snapshot state before drop", true);
+            addSubtask(tb2, "Trigger automatic rollback on error response", true);
+
+            Task tb3 = createTaskWithTime(p1, "Onboarding empty states",
+                    "Friendly copy and call-to-action when a Kanban column has no active tasks.",
+                    backlogStatus, lowPriority, devUser, admin, fiveDaysAgo, 8, 0, "NONE", Set.of(frontendLabel));
+            addSubtask(tb3, "Design illustrations for empty columns", false);
+
+            Task t4 = createTaskWithTime(p1, "Board virtualisation",
+                    "Render only visible cards to keep 1k+ tasks scrolling fast and smooth.",
+                    todoStatus, mediumPriority, alexDev, admin, fiveDaysAgo, 20, 20, "NONE", Set.of(frontendLabel));
+            addSubtask(t4, "Benchmark current board rendering speed", true);
+            addSubtask(t4, "Windowing spike implementation", true);
 
             Task t5 = createTaskWithTime(p1, "Integrate SweetAlert2 Popups Across Workspace",
                     "Replace native browser alerts with custom animated SweetAlert2 popups.",

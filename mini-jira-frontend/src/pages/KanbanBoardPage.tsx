@@ -9,12 +9,11 @@ import { useOptimisticKanban } from '../hooks/useOptimisticKanban';
 import { useTaskFiltersUrlSync } from '../hooks/useTaskFiltersUrlSync';
 import { useDebounce } from '../hooks/useDebounce';
 import { ToastContainer } from '../components/Toast';
-import { RefreshCw, Zap } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 export const KanbanBoardPage: React.FC = () => {
   const { projectId } = useParams();
   const [firstProjectId, setFirstProjectId] = useState<string>('1');
-  const [simulationEnabled, setSimulationEnabled] = useState(false);
 
   useEffect(() => {
     apiClient.get('/projects').then((res) => {
@@ -99,13 +98,25 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  const statuses = statusesData || [];
+  const DEFAULT_4_STATUSES: TaskStatus[] = [
+    { id: 1, name: 'Backlog', code: 'BACKLOG', displayOrder: 1, color: '#94a3b8', capacityLimit: 0, active: true },
+    { id: 2, name: 'To Do', code: 'TODO', displayOrder: 2, color: '#3b82f6', capacityLimit: 0, active: true },
+    { id: 3, name: 'In Progress', code: 'IN_PROGRESS', displayOrder: 3, color: '#f59e0b', capacityLimit: 3, active: true },
+    { id: 4, name: 'Done', code: 'DONE', displayOrder: 4, color: '#10b981', capacityLimit: 0, active: true },
+  ];
+
+  const rawStatuses = (statusesData && statusesData.length > 0) ? statusesData : DEFAULT_4_STATUSES;
+  const hasBacklog = rawStatuses.some(s => s.code === 'BACKLOG');
+  const statuses = hasBacklog
+    ? [...rawStatuses].sort((a, b) => a.displayOrder - b.displayOrder)
+    : [DEFAULT_4_STATUSES[0], ...rawStatuses].sort((a, b) => a.displayOrder - b.displayOrder);
+
   const initialTasks = tasksData || [];
 
   const { tasks, moveTask, toasts, removeToast } = useOptimisticKanban({
     initialTasks,
     statuses,
-    enableSimulation: simulationEnabled,
+    enableSimulation: false,
   });
 
   if (isStatusesLoading || isTasksLoading) {
@@ -119,29 +130,37 @@ export const KanbanBoardPage: React.FC = () => {
 
   return (
     <div className="container-fluid p-0 d-flex flex-column gap-3">
-      {/* View Header Bar */}
+      {/* View Header Bar with Dual-View Toggle */}
       <div className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
         <div>
-          <h2 className="h4 fw-bold text-dark mb-1">Kanban Workspace</h2>
+          <div className="d-flex align-items-center gap-3 mb-1">
+            <h2 className="h4 fw-bold text-dark mb-0">Kanban Workspace</h2>
+            
+            {/* Dual-View Navigation Tab Bar */}
+            <div className="btn-group btn-group-sm bg-white p-1 rounded-3 border shadow-xs">
+              <button
+                type="button"
+                className="btn btn-sm btn-primary bg-gradient-primary fw-semibold rounded-2 px-3 py-1 text-xs"
+              >
+                Board View
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const query = window.location.search;
+                  window.location.href = `/projects/${activeProjectId}/gantt${query}`;
+                }}
+                className="btn btn-sm btn-light text-muted hover-text-dark fw-semibold rounded-2 px-3 py-1 text-xs"
+              >
+                Gantt Timeline View
+              </button>
+            </div>
+          </div>
           <p className="small text-muted mb-0">
-            Multi-criteria search, two-way URL sync, and optimistic UI state engine.
+            Multi-criteria search, two-way URL sync, expandable cards, and optimistic UI state engine.
           </p>
         </div>
 
-        {/* Simulation Toggle Switch */}
-        <div className="card card-glass border-0 px-3 py-2 rounded-3 shadow-xs d-flex flex-row align-items-center gap-2">
-          <Zap style={{ width: '16px', height: '16px' }} className={simulationEnabled ? 'text-warning fill-warning' : 'text-muted'} />
-          <span className="small fw-semibold text-dark me-2" style={{ fontSize: '0.78rem' }}>1.5s Latency & 15% Error Sim:</span>
-          <div className="form-check form-switch mb-0">
-            <input
-              className="form-check-input shadow-none cursor-pointer"
-              type="checkbox"
-              role="switch"
-              checked={simulationEnabled}
-              onChange={(e) => setSimulationEnabled(e.target.checked)}
-            />
-          </div>
-        </div>
       </div>
 
       {/* Multi-criteria Filter Controls Bar */}

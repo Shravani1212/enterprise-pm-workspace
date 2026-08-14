@@ -4,6 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Task, TaskStatus } from '../../types';
 import { TaskCard } from './TaskCard';
 import { AlertTriangle, Plus } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface KanbanColumnProps {
   status: TaskStatus;
@@ -18,6 +19,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onTaskClick,
   onAddTaskClick,
 }) => {
+  const { user } = useAuth();
   const { setNodeRef } = useDroppable({
     id: status.id.toString(),
   });
@@ -28,43 +30,37 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className="card card-glass border-0 shadow-sm rounded-4 p-3 d-flex flex-column max-h-100 flex-shrink-0"
+      className={`card border-0 shadow-sm rounded-4 p-3 d-flex flex-column max-h-100 flex-shrink-0 transition-all kanban-column-card ${
+        isCapacityExceeded
+          ? 'bg-danger bg-opacity-10 border border-danger border-opacity-50 shadow-md'
+          : 'card-glass'
+      }`}
       style={{ width: '320px' }}
     >
       {/* Column Header */}
-      <div className="d-flex align-items-center justify-content-between mb-3">
+      <div className="d-flex align-items-center justify-content-between mb-3 px-1">
         <div className="d-flex align-items-center gap-2">
           <span
             className="rounded-circle d-inline-block"
-            style={{ width: '10px', height: '10px', backgroundColor: status.color }}
+            style={{ width: '8px', height: '8px', backgroundColor: status.color }}
           ></span>
-          <h3 className="h6 fw-bold mb-0 text-dark" style={{ fontSize: '0.9rem' }}>{status.name}</h3>
-          <span className="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-1" style={{ fontSize: '0.7rem' }}>
-            {tasks.length}
-          </span>
+          <h3 className="h6 fw-extrabold mb-0 text-dark text-uppercase tracking-wider" style={{ fontSize: '0.82rem', letterSpacing: '0.06em' }}>
+            {status.name}
+          </h3>
         </div>
 
-        {/* Capacity Warning Indicator */}
-        {status.capacityLimit > 0 && (
-          <div
-            className={`badge d-flex align-items-center gap-1 border px-2 py-1 ${
-              isCapacityExceeded
-                ? 'badge-subtle-danger animate-pulse'
-                : 'bg-light text-secondary border-secondary border-opacity-25'
-            }`}
-            style={{ fontSize: '0.7rem' }}
-            title={
-              isCapacityExceeded
-                ? `WIP Limit Exceeded! Max capacity is ${status.capacityLimit}`
-                : `WIP Limit: ${status.capacityLimit}`
-            }
-          >
-            {isCapacityExceeded && <AlertTriangle style={{ width: '12px', height: '12px' }} />}
-            <span>
-              {tasks.length}/{status.capacityLimit}
-            </span>
-          </div>
-        )}
+        {/* Count / Capacity Pill Badge matching image mock (e.g. 3, 2/4, 1/3, 2) */}
+        <span 
+          className={`badge rounded-pill px-2.5 py-1 fw-bold border ${
+            isCapacityExceeded 
+              ? 'bg-danger text-white border-danger animate-pulse' 
+              : 'bg-white text-secondary border shadow-xs'
+          }`}
+          style={{ fontSize: '0.72rem' }}
+          title={status.capacityLimit > 0 ? `WIP Limit: ${status.capacityLimit}` : `${tasks.length} tasks`}
+        >
+          {status.capacityLimit > 0 ? `${tasks.length}/${status.capacityLimit}` : tasks.length}
+        </span>
       </div>
 
       {/* Task List Drop Zone */}
@@ -85,15 +81,17 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         )}
       </div>
 
-      {/* Quick Add Button */}
-      <button
-        onClick={() => onAddTaskClick?.(status.id)}
-        className="btn btn-sm btn-outline-primary border-dashed rounded-3 w-100 d-flex align-items-center justify-center gap-1.5 mt-2 fw-semibold"
-        style={{ fontSize: '0.8rem' }}
-      >
-        <Plus style={{ width: '14px', height: '14px' }} />
-        <span>Add Task</span>
-      </button>
+      {/* Quick Add Button (Only for Admin, PM, Project Lead) */}
+      {user?.roles?.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN' || r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER' || r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') && (
+        <button
+          onClick={() => onAddTaskClick?.(status.id)}
+          className="btn btn-sm btn-outline-primary border-dashed rounded-3 w-100 d-flex align-items-center justify-center gap-1.5 mt-2 fw-semibold"
+          style={{ fontSize: '0.8rem' }}
+        >
+          <Plus style={{ width: '14px', height: '14px' }} />
+          <span>Add Task</span>
+        </button>
+      )}
     </div>
   );
 };

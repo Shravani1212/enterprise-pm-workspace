@@ -390,11 +390,12 @@ export const LoginPage: React.FC = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="btn bg-transparent border-0 text-muted px-3 d-flex align-items-center justify-center shadow-none"
+                      title={showPassword ? 'Password visible' : 'Password hidden'}
                     >
                       {showPassword ? (
-                        <EyeOff style={{ width: '18px', height: '18px' }} />
-                      ) : (
                         <Eye style={{ width: '18px', height: '18px' }} />
+                      ) : (
+                        <EyeOff style={{ width: '18px', height: '18px' }} />
                       )}
                     </button>
                   </div>

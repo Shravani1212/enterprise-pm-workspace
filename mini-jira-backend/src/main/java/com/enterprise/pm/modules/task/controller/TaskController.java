@@ -26,6 +26,12 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private final com.enterprise.pm.security.ProjectSecurityEvaluator projectSecurityEvaluator;
+
+    @GetMapping("/tasks")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getAllTasks(@AuthenticationPrincipal UserPrincipal currentUser) {
+        return ResponseEntity.ok(ApiResponse.success(taskService.getAllTasksForUser(currentUser)));
+    }
 
     @GetMapping("/projects/{projectId}/tasks")
     @RequireProjectAccess(paramName = "projectId")
@@ -45,6 +51,7 @@ public class TaskController {
     }
 
     @PostMapping("/projects/{projectId}/tasks")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ROLE_ADMIN', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
     @RequireProjectAccess(paramName = "projectId")
     public ResponseEntity<ApiResponse<TaskResponse>> createTask(@PathVariable("projectId") Long projectId,
                                                                  @Valid @RequestBody TaskCreateRequest request,
@@ -136,10 +143,12 @@ public class TaskController {
         if (projectId == null) {
             throw new ResourceNotFoundException("Task not found");
         }
-        boolean isAdmin = currentUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (!isAdmin && !taskService.getProjectIdForTask(projectId).equals(projectId)) {
-            // Checked by aspect or service
+        boolean isAuthorized = currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") ||
+                               a.getAuthority().equals("ROLE_PROJECT_MANAGER") ||
+                               a.getAuthority().equals("ROLE_DEVELOPER"));
+        if (!isAuthorized && !projectSecurityEvaluator.isMember(currentUser.getId(), projectId)) {
+            throw new AccessDeniedException("Forbidden: You are not an active member of Project " + projectId);
         }
     }
 }

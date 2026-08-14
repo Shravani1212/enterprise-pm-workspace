@@ -32,6 +32,7 @@ public class SubtaskController {
     }
 
     @PostMapping("/tasks/{taskId}/subtasks")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ROLE_ADMIN', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
     public ResponseEntity<ApiResponse<SubtaskResponse>> createSubtask(@PathVariable("taskId") Long taskId,
                                                                        @Valid @RequestBody SubtaskCreateRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Subtask created successfully", subtaskService.createSubtask(taskId, request)));

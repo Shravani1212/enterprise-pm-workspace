@@ -36,13 +36,17 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   return <>{children}</>;
 };
 
-// Placeholder Page for secondary subviews
-const PlaceholderPage: React.FC<{ title: string; description?: string }> = ({ title, description }) => (
-  <div className="glass-card p-8 rounded-2xl border border-slate-200">
-    <h2 className="text-xl font-bold text-slate-900 mb-2">{title}</h2>
-    <p className="text-sm text-slate-500">{description || 'Component view ready for integration.'}</p>
-  </div>
-);
+// Admin Only Route Guard
+export const AdminOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN');
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 // Master App Routes Component
 export const AppRoutes: React.FC = () => {
@@ -66,6 +70,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="projects/:projectId/board" element={<KanbanBoardPage />} />
         <Route path="projects/:projectId/gantt" element={<GanttPage />} />
         <Route path="projects/:projectId/members" element={<ProjectMembersPage />} />
+        <Route path="users" element={<AdminOnlyRoute><UserManagementPage /></AdminOnlyRoute>} />
         <Route path="ai-assistant" element={<AiAssistantPage />} />
       </Route>
 

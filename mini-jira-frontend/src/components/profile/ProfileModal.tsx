@@ -145,12 +145,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="btn btn-light border border-start-0 text-muted px-2 d-flex align-items-center justify-center"
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Password visible' : 'Password hidden'}
                 >
                   {showPassword ? (
-                    <EyeOff style={{ width: '14px', height: '14px' }} />
-                  ) : (
                     <Eye style={{ width: '14px', height: '14px' }} />
+                  ) : (
+                    <EyeOff style={{ width: '14px', height: '14px' }} />
                   )}
                 </button>
               </div>

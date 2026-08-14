@@ -254,6 +254,7 @@ export const UserManagementPage: React.FC = () => {
                     className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm"
                   >
                     <option value="DEVELOPER">Developer (Sprint & Task execution)</option>
+                    <option value="PROJECT_LEAD">Project Lead (Task creation & developer assignment)</option>
                     <option value="PROJECT_MANAGER">Project Manager (Sprint creation & project control)</option>
                     <option value="ADMIN">System Administrator (Full access)</option>
                   </select>

@@ -37,6 +37,8 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final SessionRepository sessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final com.enterprise.pm.modules.project.repository.ProjectRepository projectRepository;
+    private final com.enterprise.pm.modules.project.repository.ProjectMemberRepository projectMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -73,15 +75,38 @@ public class AuthService {
         }
         if (request.roleCodes() != null && !request.roleCodes().isEmpty()) {
             for (String code : request.roleCodes()) {
-                roleRepository.findByCode(code).ifPresent(assignedRoles::add);
+                if (code != null && !code.isBlank()) {
+                    String cleanCode = code.replace("ROLE_", "");
+                    roleRepository.findByCode(cleanCode).ifPresent(assignedRoles::add);
+                    roleRepository.findByCode("ROLE_" + cleanCode).ifPresent(assignedRoles::add);
+                    roleRepository.findByCode(code).ifPresent(assignedRoles::add);
+                }
             }
         }
         if (assignedRoles.isEmpty()) {
             roleRepository.findByCode("DEVELOPER").ifPresent(assignedRoles::add);
+            roleRepository.findByCode("ROLE_DEVELOPER").ifPresent(assignedRoles::add);
         }
 
         user.setRoles(assignedRoles);
         User savedUser = userRepository.save(user);
+
+        // Auto-enroll new user into all active workspace projects
+        try {
+            Role assignedRole = assignedRoles.stream().findFirst().orElse(null);
+            List<com.enterprise.pm.modules.project.entity.Project> projects = projectRepository.findAll();
+            for (com.enterprise.pm.modules.project.entity.Project p : projects) {
+                com.enterprise.pm.modules.project.entity.ProjectMember member = com.enterprise.pm.modules.project.entity.ProjectMember.builder()
+                        .project(p)
+                        .user(savedUser)
+                        .projectRole(assignedRole)
+                        .active(true)
+                        .build();
+                projectMemberRepository.save(member);
+            }
+        } catch (Exception e) {
+            // Ignore auto-enrollment warnings
+        }
 
         return UserMapper.toUserResponse(savedUser);
     }

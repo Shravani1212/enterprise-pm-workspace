@@ -1,6 +1,6 @@
 import React from 'react';
 import { Priority, TaskStatus, Label, ProjectMember } from '../types';
-import { Filter, X, Search, ShieldAlert, Tag, User } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 export interface TaskFilterState {
   search: string;
@@ -44,32 +44,31 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
   };
 
   return (
-    <div className="card card-glass p-3 mb-4 border-0 shadow-sm rounded-3">
-      <div className="d-flex flex-wrap align-items-center gap-2">
-        {/* Title Search Input */}
-        <div className="input-group input-group-sm flex-grow-1" style={{ minWidth: '220px' }}>
-          <span className="input-group-text bg-light border-end-0 text-muted">
-            <Search style={{ width: '14px', height: '14px' }} />
+    <div className="bg-white p-2.5 mb-4 rounded-4 border shadow-xs">
+      <div className="d-flex flex-wrap align-items-center gap-2.5">
+        {/* Title Search Input matching exact Image mock */}
+        <div className="input-group flex-grow-1" style={{ minWidth: '280px' }}>
+          <span className="input-group-text bg-light border-end-0 rounded-start-4 px-3 text-muted">
+            <Search style={{ width: '16px', height: '16px' }} />
           </span>
           <input
             type="text"
-            placeholder="Filter by keyword..."
+            placeholder="Search tasks by title or description..."
             value={filters.search}
             onChange={(e) => handleChange('search', e.target.value)}
-            className="form-control bg-light border-start-0 shadow-none text-sm"
+            className="form-control bg-light border-start-0 rounded-end-4 shadow-none text-sm py-2"
           />
         </div>
 
-        {/* Priority Dropdown */}
-        <div className="d-flex align-items-center bg-light border rounded-3 px-2 py-1" style={{ height: '34px' }}>
-          <ShieldAlert className="text-muted me-1" style={{ width: '14px', height: '14px' }} />
+        {/* Priority Dropdown matching Image mock */}
+        <div className="bg-light border rounded-4 px-3 py-1.5" style={{ minWidth: '150px' }}>
           <select
             value={filters.priorityId}
             onChange={(e) => handleChange('priorityId', e.target.value)}
-            className="form-select form-select-sm border-0 bg-transparent text-secondary fw-semibold shadow-none py-0 ps-1 pe-4"
-            style={{ fontSize: '0.8rem', cursor: 'pointer' }}
+            className="form-select border-0 bg-transparent text-dark fw-medium shadow-none py-1 ps-0 pe-4 text-xs"
+            style={{ cursor: 'pointer' }}
           >
-            <option value="">All Priorities</option>
+            <option value="">All priorities</option>
             {priorities.map((p) => (
               <option key={p.id} value={p.id.toString()}>
                 {p.name}
@@ -78,34 +77,15 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
           </select>
         </div>
 
-        {/* Status Dropdown */}
-        <div className="d-flex align-items-center bg-light border rounded-3 px-2 py-1" style={{ height: '34px' }}>
-          <Filter className="text-muted me-1" style={{ width: '14px', height: '14px' }} />
-          <select
-            value={filters.statusId}
-            onChange={(e) => handleChange('statusId', e.target.value)}
-            className="form-select form-select-sm border-0 bg-transparent text-secondary fw-semibold shadow-none py-0 ps-1 pe-4"
-            style={{ fontSize: '0.8rem', cursor: 'pointer' }}
-          >
-            <option value="">All Statuses</option>
-            {statuses.map((s) => (
-              <option key={s.id} value={s.id.toString()}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Assignee Dropdown */}
-        <div className="d-flex align-items-center bg-light border rounded-3 px-2 py-1" style={{ height: '34px' }}>
-          <User className="text-muted me-1" style={{ width: '14px', height: '14px' }} />
+        {/* Assignee Dropdown matching Image mock */}
+        <div className="bg-light border rounded-4 px-3 py-1.5" style={{ minWidth: '150px' }}>
           <select
             value={filters.assigneeId}
             onChange={(e) => handleChange('assigneeId', e.target.value)}
-            className="form-select form-select-sm border-0 bg-transparent text-secondary fw-semibold shadow-none py-0 ps-1 pe-4"
-            style={{ fontSize: '0.8rem', cursor: 'pointer' }}
+            className="form-select border-0 bg-transparent text-dark fw-medium shadow-none py-1 ps-0 pe-4 text-xs"
+            style={{ cursor: 'pointer' }}
           >
-            <option value="">All Assignees</option>
+            <option value="">All assignees</option>
             {members.map((m) => (
               <option key={m.user.id} value={m.user.id.toString()}>
                 {m.user.firstName} {m.user.lastName}
@@ -114,33 +94,31 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
           </select>
         </div>
 
-        {/* Tag/Label Dropdown */}
-        <div className="d-flex align-items-center bg-light border rounded-3 px-2 py-1" style={{ height: '34px' }}>
-          <Tag className="text-muted me-1" style={{ width: '14px', height: '14px' }} />
+        {/* Status Dropdown */}
+        <div className="bg-light border rounded-4 px-3 py-1.5" style={{ minWidth: '140px' }}>
           <select
-            value={filters.labelId}
-            onChange={(e) => handleChange('labelId', e.target.value)}
-            className="form-select form-select-sm border-0 bg-transparent text-secondary fw-semibold shadow-none py-0 ps-1 pe-4"
-            style={{ fontSize: '0.8rem', cursor: 'pointer' }}
+            value={filters.statusId}
+            onChange={(e) => handleChange('statusId', e.target.value)}
+            className="form-select border-0 bg-transparent text-dark fw-medium shadow-none py-1 ps-0 pe-4 text-xs"
+            style={{ cursor: 'pointer' }}
           >
-            <option value="">All Labels</option>
-            {labels.map((l) => (
-              <option key={l.id} value={l.id.toString()}>
-                {l.name}
+            <option value="">All statuses</option>
+            {statuses.map((s) => (
+              <option key={s.id} value={s.id.toString()}>
+                {s.name}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Clear Filters Button */}
+        {/* Reset Filters Button */}
         {hasActiveFilters && (
           <button
             onClick={onResetFilters}
-            className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 fw-bold rounded-3 ms-auto"
-            style={{ fontSize: '0.78rem' }}
+            className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1.5 fw-semibold rounded-pill px-3 py-1.5 text-xs ms-auto"
           >
             <X style={{ width: '14px', height: '14px' }} />
-            <span>Reset Filters</span>
+            <span>Reset</span>
           </button>
         )}
       </div>

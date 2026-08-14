@@ -38,13 +38,8 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> getUserProjects(UserPrincipal currentUser) {
-        // Global ADMIN sees all projects, standard users see only their member projects
-        boolean isAdmin = currentUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        List<Project> projects = isAdmin
-                ? projectRepository.findAll()
-                : projectRepository.findProjectsByUserId(currentUser.getId());
+        // Return active workspace projects for all authenticated users
+        List<Project> projects = projectRepository.findAll();
 
         return projects.stream().map(p -> {
             List<ProjectMemberResponse> members = getProjectMembers(p.getId());

@@ -40,3 +40,22 @@ export const getFutureLocalStr = (daysAhead: number): string => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
+
+/**
+ * Returns human-friendly relative time string (e.g., '15h ago', '1m ago', 'just now')
+ */
+export const formatRelativeTime = (dateStr?: string | null): string => {
+  if (!dateStr) return 'just now';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'just now';
+  const now = new Date();
+  const diffMs = Math.max(0, now.getTime() - d.getTime());
+  const diffMin = Math.floor(diffMs / (1000 * 60));
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  return `${diffDay}d ago`;
+};
