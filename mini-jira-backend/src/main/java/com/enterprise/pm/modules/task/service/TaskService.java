@@ -158,6 +158,7 @@ public class TaskService {
         if (request.estimatedHours() != null) task.setEstimatedHours(request.estimatedHours());
         if (request.loggedHours() != null) task.setLoggedHours(request.loggedHours());
         if (request.escalationLevel() != null) task.setEscalationLevel(request.escalationLevel());
+        if (request.delayReason() != null) task.setDelayReason(request.delayReason());
 
         if (request.labelIds() != null) {
             Set<Label> labels = new HashSet<>(labelRepository.findAllById(request.labelIds()));
@@ -169,7 +170,7 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse patchTaskStatus(Long taskId, Long statusId) {
+    public TaskResponse patchTaskStatus(Long taskId, Long statusId, String delayReason) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId));
 
@@ -177,6 +178,9 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Task status not found"));
 
         task.setStatus(status);
+        if (delayReason != null && !delayReason.isBlank()) {
+            task.setDelayReason(delayReason);
+        }
         Task updatedTask = taskRepository.save(task);
         return TaskMapper.toTaskResponse(updatedTask);
     }

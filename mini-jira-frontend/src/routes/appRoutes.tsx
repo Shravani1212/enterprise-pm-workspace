@@ -6,7 +6,11 @@ import { AppLayout } from '../layouts/AppLayout';
 import { LoginPage } from '../pages/LoginPage';
 import { KanbanBoardPage } from '../pages/KanbanBoardPage';
 import { GanttPage } from '../pages/GanttPage';
-import { AiAssistantPage } from '../pages/AiAssistantPage';import { ProjectsOverviewPage } from '../pages/ProjectsOverviewPage';
+import { AiAssistantPage } from '../pages/AiAssistantPage';
+import { ProjectsOverviewPage } from '../pages/ProjectsOverviewPage';
+import { ProjectMembersPage } from '../pages/ProjectMembersPage';
+import { UserManagementPage } from '../pages/UserManagementPage';
+import { DashboardPage } from '../pages/DashboardPage';
 
 // Centralized Route Path Constants
 export const ROUTES = {
@@ -56,19 +60,12 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to={ROUTES.PROJECTS} replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsOverviewPage />} />
         <Route path="projects/:projectId/board" element={<KanbanBoardPage />} />
         <Route path="projects/:projectId/gantt" element={<GanttPage />} />
-        <Route
-          path="projects/:projectId/members"
-          element={
-            <PlaceholderPage
-              title="Project Members & Access Control"
-              description="Manage team membership and project-level RBAC role assignments."
-            />
-          }
-        />
+        <Route path="projects/:projectId/members" element={<ProjectMembersPage />} />
         <Route path="ai-assistant" element={<AiAssistantPage />} />
       </Route>
 

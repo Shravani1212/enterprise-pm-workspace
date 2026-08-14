@@ -16,6 +16,6 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     boolean existsByProjectIdAndUserIdAndActiveTrue(Long projectId, Long userId);
 
-    @Query("SELECT pm FROM ProjectMember pm JOIN FETCH pm.user JOIN FETCH pm.projectRole WHERE pm.project.id = :projectId AND pm.active = true")
+    @Query("SELECT DISTINCT pm FROM ProjectMember pm JOIN FETCH pm.user u LEFT JOIN FETCH u.roles JOIN FETCH pm.projectRole WHERE pm.project.id = :projectId AND pm.active = true")
     List<ProjectMember> findActiveMembersByProjectId(@Param("projectId") Long projectId);
 }

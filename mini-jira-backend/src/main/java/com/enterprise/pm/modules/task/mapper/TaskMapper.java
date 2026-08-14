@@ -49,6 +49,7 @@ public class TaskMapper {
             task.getEstimatedHours() != null ? task.getEstimatedHours() : 8,
             task.getLoggedHours() != null ? task.getLoggedHours() : 0,
             task.getEscalationLevel() != null ? task.getEscalationLevel() : "NONE",
+            task.getDelayReason(),
             task.getAttachmentPath(),
             task.getAttachmentName(),
             task.getAttachmentType(),

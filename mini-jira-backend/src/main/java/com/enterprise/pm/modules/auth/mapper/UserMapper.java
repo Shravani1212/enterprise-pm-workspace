@@ -4,6 +4,7 @@ import com.enterprise.pm.modules.auth.dto.AuthDTOs.RoleResponse;
 import com.enterprise.pm.modules.auth.dto.AuthDTOs.UserResponse;
 import com.enterprise.pm.modules.auth.entity.Role;
 import com.enterprise.pm.modules.auth.entity.User;
+import org.hibernate.LazyInitializationException;
 
 import java.util.Collections;
 import java.util.Set;
@@ -14,7 +15,23 @@ public class UserMapper {
     public static UserResponse toUserResponse(User user) {
         if (user == null) return null;
 
-        Set<Role> roles = user.getRoles() != null ? user.getRoles() : Collections.emptySet();
+        Set<String> roleCodes = Collections.emptySet();
+        Set<Long> roleIds = Collections.emptySet();
+        Set<RoleResponse> roleResponses = Collections.emptySet();
+
+        try {
+            if (user.getRoles() != null) {
+                roleCodes = user.getRoles().stream().map(Role::getCode).collect(Collectors.toSet());
+                roleIds = user.getRoles().stream().map(Role::getId).collect(Collectors.toSet());
+                roleResponses = user.getRoles().stream()
+                        .map(r -> new RoleResponse(r.getId(), r.getName(), r.getCode()))
+                        .collect(Collectors.toSet());
+            }
+        } catch (LazyInitializationException e) {
+            roleCodes = Collections.emptySet();
+            roleIds = Collections.emptySet();
+            roleResponses = Collections.emptySet();
+        }
 
         return new UserResponse(
             user.getId(),
@@ -24,9 +41,9 @@ public class UserMapper {
             user.getLastName(),
             user.getStatus(),
             user.getLastLoginAt(),
-            roles.stream().map(Role::getCode).collect(Collectors.toSet()),
-            roles.stream().map(Role::getId).collect(Collectors.toSet()),
-            roles.stream().map(r -> new RoleResponse(r.getId(), r.getName(), r.getCode())).collect(Collectors.toSet())
+            roleCodes,
+            roleIds,
+            roleResponses
         );
     }
 }

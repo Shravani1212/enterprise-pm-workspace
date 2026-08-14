@@ -1,32 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { 
   FolderKanban, 
   LayoutDashboard, 
   GanttChartSquare, 
   Users, 
-  Settings, 
-  Bot, 
   LogOut, 
   User as UserIcon,
   ChevronUp,
-  Layers
+  Layers,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { ProfileModal } from './profile/ProfileModal';
 import { showConfirmAlert } from '../utils/alertUtils';
+import apiClient from '../services/apiClient';
 
 export const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { projectId } = useParams();
-  const activeProjectId = projectId || '1';
+  const [firstProjectId, setFirstProjectId] = useState<string>('1');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    apiClient.get('/projects').then((res) => {
+      if (res.data?.success && res.data?.data?.length > 0) {
+        setFirstProjectId(String(res.data.data[0].id));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const activeProjectId = projectId || firstProjectId;
 
   const handleLogoutClick = async () => {
     const confirmed = await showConfirmAlert(
       'Sign Out Workspace?',
-      'Are you sure you want to log out of Nexus PM?',
+      'Are you sure you want to log out of ProjectPulse?',
       'Log Out'
     );
     if (confirmed) {
@@ -35,132 +48,175 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 glass-panel border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 z-30">
+    <aside className="bg-white border-end d-flex flex-column justify-between vh-100 sticky-top z-3" style={{ width: '260px', flexShrink: 0 }}>
       <div>
         {/* Brand Header */}
-        <div className="p-6 border-b border-slate-200/60 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-            <Layers className="h-5 w-5" />
+        <div className="p-4 border-bottom d-flex align-items-center gap-3">
+          <div className="rounded-3 bg-gradient-primary d-flex align-items-center justify-center text-white shadow-sm" style={{ width: '40px', height: '40px' }}>
+            <Layers className="h-5 w-5" style={{ width: '20px', height: '20px' }} />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-slate-900 leading-tight">Nexus PM</h1>
-            <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100">
-              Enterprise v1.0
+            <h1 className="h6 fw-bold mb-0 text-dark">ProjectPulse</h1>
+            <span className="badge badge-subtle-primary rounded-pill px-2 py-1" style={{ fontSize: '0.65rem' }}>
+              ProjectPulse v1.0
             </span>
           </div>
         </div>
 
         {/* Navigation Section */}
-        <div className="px-4 py-6 space-y-1">
-          <div className="px-3 mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Workspace</div>
+        <div className="px-3 py-4">
+          <div className="px-2 mb-2 text-uppercase fw-bold text-muted" style={{ fontSize: '0.68rem', letterSpacing: '0.05em' }}>
+            Workspace
+          </div>
 
-          <NavLink
-            to="/projects"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                isActive
-                  ? 'bg-gradient-primary text-white shadow-md shadow-indigo-500/20'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
-              }`
-            }
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span>Projects Overview</span>
-          </NavLink>
+          <nav className="nav nav-pills flex-column gap-1">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                }`
+              }
+            >
+              <LayoutDashboard style={{ width: '18px', height: '18px' }} />
+              <span>Role Dashboard</span>
+            </NavLink>
 
-          <NavLink
-            to={`/projects/${activeProjectId}/board`}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                isActive
-                  ? 'bg-gradient-primary text-white shadow-md shadow-indigo-500/20'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
-              }`
-            }
-          >
-            <FolderKanban className="h-4 w-4" />
-            <span>Kanban Board</span>
-          </NavLink>
+            <NavLink
+              to={`/projects/${activeProjectId}/board`}
+              className={({ isActive }) =>
+                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                }`
+              }
+            >
+              <FolderKanban style={{ width: '18px', height: '18px' }} />
+              <span>Kanban Board</span>
+            </NavLink>
 
-          <NavLink
-            to={`/projects/${activeProjectId}/gantt`}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                isActive
-                  ? 'bg-gradient-primary text-white shadow-md shadow-indigo-500/20'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
-              }`
-            }
-          >
-            <GanttChartSquare className="h-4 w-4" />
-            <span>Gantt Timeline</span>
-          </NavLink>
+            <NavLink
+              to={`/projects/${activeProjectId}/gantt`}
+              className={({ isActive }) =>
+                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                }`
+              }
+            >
+              <GanttChartSquare style={{ width: '18px', height: '18px' }} />
+              <span>Gantt Timeline</span>
+            </NavLink>
 
-          <NavLink
-            to={`/projects/${activeProjectId}/members`}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                isActive
-                  ? 'bg-gradient-primary text-white shadow-md shadow-indigo-500/20'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
-              }`
-            }
-          >
-            <Users className="h-4 w-4" />
-            <span>Project Members</span>
-          </NavLink>        </div>
+            <NavLink
+              to={`/projects/${activeProjectId}/members`}
+              className={({ isActive }) =>
+                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                }`
+              }
+            >
+              <Users style={{ width: '18px', height: '18px' }} />
+              <span>Project Members</span>
+            </NavLink>
+
+            {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN' || r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') && (
+              <NavLink
+                to="/users"
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                    isActive
+                      ? 'bg-gradient-primary text-white shadow-sm'
+                      : 'text-secondary hover-bg-light'
+                  }`
+                }
+              >
+                <Users style={{ width: '18px', height: '18px' }} />
+                <span>User & Roles Admin</span>
+              </NavLink>
+            )}
+          </nav>
+        </div>
       </div>
 
       {/* User Footer with Options Menu */}
-      <div className="p-4 border-t border-slate-200/60 relative">
+      <div className="p-3 border-top position-relative">
         {/* User Options Popover Menu */}
         {isMenuOpen && (
-          <div className="absolute bottom-16 left-4 right-4 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-slide-up z-40 p-1.5 space-y-1">
+          <div
+            className="position-absolute bg-white rounded-3 border shadow-lg overflow-hidden animate-slide-up p-2 z-3"
+            style={{ bottom: '75px', left: '12px', right: '12px' }}
+          >
             <button
               onClick={() => {
                 setIsMenuOpen(false);
                 setIsProfileModalOpen(true);
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-dark rounded-2 mb-1"
             >
-              <UserIcon className="h-4 w-4 text-indigo-600" />
-              <span>Update Profile</span>
+              <UserIcon className="text-primary" style={{ width: '16px', height: '16px' }} />
+              <span className="small">Update Profile</span>
+            </button>
+            <button
+              onClick={() => {
+                toggleTheme();
+              }}
+              className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-dark rounded-2 mb-1"
+            >
+              {theme === 'light' ? (
+                <>
+                  <Moon className="text-primary" style={{ width: '16px', height: '16px' }} />
+                  <span className="small">Dark Theme</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="text-warning" style={{ width: '16px', height: '16px' }} />
+                  <span className="small">Light Theme</span>
+                </>
+              )}
             </button>
             <button
               onClick={() => {
                 setIsMenuOpen(false);
                 handleLogoutClick();
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+              className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-danger rounded-2"
             >
-              <LogOut className="h-4 w-4" />
-              <span>Sign Out</span>
+              <LogOut style={{ width: '16px', height: '16px' }} />
+              <span className="small">Sign Out</span>
             </button>
           </div>
         )}
 
-        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/60">
+        <div className="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border">
           <div
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center gap-2.5 overflow-hidden cursor-pointer flex-1"
+            className="d-flex align-items-center gap-2 overflow-hidden cursor-pointer flex-grow-1"
+            style={{ cursor: 'pointer' }}
           >
-            <div className="h-9 w-9 rounded-lg bg-gradient-primary text-white font-bold flex items-center justify-center text-sm shrink-0 shadow-sm">
+            <div className="rounded-2 bg-gradient-primary text-white fw-bold d-flex align-items-center justify-center small shrink-0" style={{ width: '36px', height: '36px' }}>
               {user?.firstName?.[0] || 'U'}
             </div>
-            <div className="truncate">
-              <div className="text-sm font-semibold text-slate-900 truncate">
+            <div className="text-truncate">
+              <div className="fw-semibold text-dark text-truncate small">
                 {user?.firstName} {user?.lastName}
               </div>
-              <div className="text-xs text-slate-500 truncate">@{user?.username}</div>
+              <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>@{user?.username}</div>
             </div>
           </div>
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
+            className="btn btn-sm btn-link text-muted p-1 border-0"
             title="Account Options"
           >
-            <ChevronUp className={`h-4 w-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+            <ChevronUp style={{ width: '16px', height: '16px', transform: isMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
           </button>
         </div>
       </div>
@@ -172,4 +228,3 @@ export const Sidebar: React.FC = () => {
     </aside>
   );
 };
-

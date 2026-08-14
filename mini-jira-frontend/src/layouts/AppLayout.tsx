@@ -10,14 +10,14 @@ export const AppLayout: React.FC = () => {
   usePendingTasksNotifier();
 
   return (
-    <div className="flex min-h-screen bg-gradient-app relative">
+    <div className="d-flex min-vh-100 bg-workspace-gradient position-relative">
       {/* Sidebar Navigation */}
       <Sidebar />
 
       {/* Main Content Area with Header & Footer */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-grow-1 d-flex flex-column min-w-0">
         <Navbar />
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-grow-1 p-3 p-md-4 p-lg-5 overflow-auto">
           <Outlet />
         </main>
         <Footer />

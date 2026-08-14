@@ -9,16 +9,13 @@ import {
   Edit3, 
   Trash2, 
   ArrowRight, 
-  CheckCircle2, 
-  Clock, 
-  X,
-  Layers,
-  Sparkles
+  X
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { ApiResponse, ProjectResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/alertUtils';
+import { formatDateDDMMYYYY, getTodayLocalStr, getFutureLocalStr } from '../utils/dateUtils';
 
 export const ProjectsOverviewPage: React.FC = () => {
   const { user } = useAuth();
@@ -69,8 +66,8 @@ export const ProjectsOverviewPage: React.FC = () => {
       code: '',
       description: '',
       status: 'ACTIVE',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+      startDate: getTodayLocalStr(),
+      endDate: getFutureLocalStr(90),
     });
     setIsCreateModalOpen(true);
   };
@@ -88,7 +85,7 @@ export const ProjectsOverviewPage: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayLocalStr();
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,8 +97,17 @@ export const ProjectsOverviewPage: React.FC = () => {
       showErrorAlert('Invalid End Date', 'Project end date must be on or after the start date.');
       return;
     }
+
+    const payload = {
+      name: formData.name.trim(),
+      code: formData.code.trim().toUpperCase(),
+      description: formData.description?.trim() || null,
+      startDate: formData.startDate ? formData.startDate : null,
+      endDate: formData.endDate ? formData.endDate : null,
+    };
+
     try {
-      const res = await apiClient.post<ApiResponse<ProjectResponse>>('/projects', formData);
+      const res = await apiClient.post<ApiResponse<ProjectResponse>>('/projects', payload);
       if (res.data.success) {
         showSuccessAlert('Project Created', `Project "${formData.name}" has been created successfully.`);
         setIsCreateModalOpen(false);
@@ -123,8 +129,16 @@ export const ProjectsOverviewPage: React.FC = () => {
       showErrorAlert('Invalid End Date', 'Project end date must be on or after the start date.');
       return;
     }
+
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description?.trim() || null,
+      startDate: formData.startDate ? formData.startDate : null,
+      endDate: formData.endDate ? formData.endDate : null,
+    };
+
     try {
-      const res = await apiClient.put<ApiResponse<ProjectResponse>>(`/projects/${selectedProject.id}`, formData);
+      const res = await apiClient.put<ApiResponse<ProjectResponse>>(`/projects/${selectedProject.id}`, payload);
       if (res.data.success) {
         showSuccessAlert('Project Updated', `Project "${formData.name}" has been updated successfully.`);
         setIsEditModalOpen(false);
@@ -163,176 +177,181 @@ export const ProjectsOverviewPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto">
+    <div className="container-fluid p-0 animate-fade-in" style={{ maxWidth: '1280px' }}>
       {/* Top Header & Fast Action Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6 rounded-2xl border border-slate-200/80 shadow-glass">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Enterprise Projects</h1>
-            <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
-              {filteredProjects.length} Active
-            </span>
+      <div className="card card-glass p-4 rounded-4 border-0 shadow-sm mb-4">
+        <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <h1 className="h4 fw-bold mb-0 text-dark">ProjectPulse Projects</h1>
+              <span className="badge badge-subtle-primary rounded-pill px-3 py-1" style={{ fontSize: '0.75rem' }}>
+                {filteredProjects.length} Active
+              </span>
+            </div>
+            <p className="small text-muted mb-0">
+              Centralized directory of workspace project tenants, engineering pipelines, and milestones.
+            </p>
           </div>
-          <p className="text-sm text-slate-500 font-medium">
-            Centralized directory of workspace project tenants, engineering pipelines, and milestones.
-          </p>
-        </div>
 
-        {isAdminOrPm && (
-          <button
-            onClick={handleOpenCreate}
-            className="bg-gradient-primary hover:opacity-95 text-white font-semibold px-5 py-2.5 rounded-xl text-sm shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all self-start md:self-auto shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create New Project</span>
-          </button>
-        )}
+          {isAdminOrPm && (
+            <button
+              onClick={handleOpenCreate}
+              className="btn btn-primary bg-gradient-primary border-0 rounded-3 px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 shrink-0"
+            >
+              <Plus style={{ width: '16px', height: '16px' }} />
+              <span>Create New Project</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
         {/* Search Bar */}
-        <div className="relative w-full sm:w-80">
-          <Search className="h-4 w-4 absolute left-3.5 top-3 text-slate-400" />
+        <div className="input-group input-group-sm w-100" style={{ maxWidth: '320px' }}>
+          <span className="input-group-text bg-white border-end-0 text-muted rounded-start-3">
+            <Search style={{ width: '14px', height: '14px' }} />
+          </span>
           <input
             type="text"
             placeholder="Search projects by name, code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/80 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all shadow-sm"
+            className="form-control bg-white border-start-0 shadow-none text-sm rounded-end-3"
           />
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center p-1 bg-slate-200/60 rounded-xl text-xs font-semibold self-stretch sm:self-auto">
+        <ul className="nav nav-pills bg-light p-1 rounded-3 border">
           {['ALL', 'ACTIVE', 'COMPLETED', 'ARCHIVED'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                statusFilter === st
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {st}
-            </button>
+            <li className="nav-item" key={st}>
+              <button
+                onClick={() => setStatusFilter(st)}
+                className={`nav-link btn-sm py-1 px-3 fw-bold rounded-2 ${
+                  statusFilter === st ? 'active bg-white text-dark shadow-xs' : 'text-secondary'
+                }`}
+                style={{ fontSize: '0.75rem' }}
+              >
+                {st}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
 
       {/* Projects Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="row g-4">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="h-64 bg-slate-100 rounded-2xl animate-pulse"></div>
+            <div key={n} className="col-12 col-md-6 col-lg-4">
+              <div className="card rounded-4 border-0 bg-light p-5 animate-pulse" style={{ height: '260px' }}></div>
+            </div>
           ))}
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="glass-card p-12 rounded-2xl border border-slate-200 text-center max-w-md mx-auto my-12">
-          <div className="h-16 w-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-600 mx-auto mb-4">
-            <FolderKanban className="h-8 w-8" />
+        <div className="card card-glass p-5 rounded-4 border-0 text-center max-w-md mx-auto my-5">
+          <div className="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-center text-primary mx-auto mb-3" style={{ width: '56px', height: '56px' }}>
+            <FolderKanban style={{ width: '28px', height: '28px' }} />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">No Projects Found</h3>
-          <p className="text-xs text-slate-500 mb-6">
+          <h3 className="h6 fw-bold text-dark mb-1">No Projects Found</h3>
+          <p className="small text-muted mb-4">
             There are currently no projects matching your search criteria or active filter.
           </p>
           {isAdminOrPm && (
             <button
               onClick={handleOpenCreate}
-              className="bg-gradient-primary text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md"
+              className="btn btn-sm btn-primary bg-gradient-primary border-0 rounded-3 px-4 py-2 fw-semibold mx-auto"
             >
               Create First Project
             </button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="row g-4">
           {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="glass-card rounded-2xl border border-slate-200/80 p-6 flex flex-col justify-between hover:shadow-xl hover:border-slate-300 transition-all group relative overflow-hidden"
-            >
-              {/* Top Card Gradient Bar */}
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-primary"></div>
+            <div key={project.id} className="col-12 col-md-6 col-lg-4">
+              <div className="card card-glass card-hover-lift rounded-4 border-0 p-4 d-flex flex-col justify-content-between h-100 position-relative overflow-hidden">
+                {/* Top Card Gradient Bar */}
+                <div className="position-absolute top-0 start-0 end-0 bg-gradient-primary" style={{ height: '4px' }}></div>
 
-              <div>
-                {/* Header Info */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
-                    {project.code}
-                  </span>
-                  <span
-                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                      project.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    {project.status}
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors mb-2 leading-snug">
-                  {project.name}
-                </h3>
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-4 font-normal">
-                  {project.description || 'Enterprise workspace tenant project with Kanban sprint tracking.'}
-                </p>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-slate-100">
-                {/* Dates & Members */}
-                <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                    <span>{project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Active'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-slate-400" />
-                    <span>{project.members?.length || 4} Members</span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
                 <div>
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
-                    <span>Sprint Completion</span>
-                    <span className="text-brand-600">65%</span>
+                  {/* Header Info */}
+                  <div className="d-flex align-items-center justify-content-between mb-3 pt-1">
+                    <span className="badge badge-subtle-primary text-uppercase fw-bold rounded-2 px-2 py-1" style={{ fontSize: '0.7rem' }}>
+                      {project.code}
+                    </span>
+                    <span
+                      className={`badge rounded-pill px-2.5 py-1 fw-bold ${
+                        project.status === 'ACTIVE' ? 'badge-subtle-success' : 'bg-light text-secondary border'
+                      }`}
+                      style={{ fontSize: '0.68rem' }}
+                    >
+                      {project.status}
+                    </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-primary rounded-full w-[65%]"></div>
-                  </div>
+
+                  <h3 className="h6 fw-bold text-dark mb-2 text-truncate" style={{ fontSize: '1.05rem' }}>
+                    {project.name}
+                  </h3>
+                  <p className="small text-secondary mb-4 text-truncate-2" style={{ fontSize: '0.8rem', minHeight: '38px' }}>
+                    {project.description || 'Enterprise workspace tenant project with Kanban sprint tracking.'}
+                  </p>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-2">
-                  <button
-                    onClick={() => navigate(`/projects/${project.id}/board`)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors"
-                  >
-                    <span>Open Kanban Board</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-
-                  {isAdminOrPm && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(project)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                        title="Edit Project"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProject(project)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="Delete Project"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                <div className="pt-3 border-top">
+                  {/* Dates & Members */}
+                  <div className="d-flex align-items-center justify-content-between small text-muted mb-3" style={{ fontSize: '0.75rem' }}>
+                    <div className="d-flex align-items-center gap-1.5">
+                      <Calendar style={{ width: '14px', height: '14px' }} />
+                      <span>{project.startDate ? formatDateDDMMYYYY(project.startDate) : 'Active'}</span>
                     </div>
-                  )}
+                    <div className="d-flex align-items-center gap-1.5">
+                      <Users style={{ width: '14px', height: '14px' }} />
+                      <span>{project.members?.length || 4} Members</span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mb-3">
+                    <div className="d-flex align-items-center justify-content-between small fw-bold text-dark mb-1" style={{ fontSize: '0.72rem' }}>
+                      <span>Sprint Completion</span>
+                      <span className="text-primary">65%</span>
+                    </div>
+                    <div className="progress rounded-pill" style={{ height: '6px' }}>
+                      <div className="progress-bar bg-gradient-primary rounded-pill w-65" role="progressbar" style={{ width: '65%' }}></div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="d-flex align-items-center justify-content-between pt-1">
+                    <button
+                      onClick={() => navigate(`/projects/${project.id}/board`)}
+                      className="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 d-flex align-items-center gap-1"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      <span>Open Kanban Board</span>
+                      <ArrowRight style={{ width: '14px', height: '14px' }} />
+                    </button>
+
+                    {isAdminOrPm && (
+                      <div className="d-flex align-items-center gap-1">
+                        <button
+                          onClick={() => handleOpenEdit(project)}
+                          className="btn btn-sm btn-light text-muted p-1 rounded-2"
+                          title="Edit Project"
+                        >
+                          <Edit3 style={{ width: '15px', height: '15px' }} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(project)}
+                          className="btn btn-sm btn-light text-danger p-1 rounded-2"
+                          title="Delete Project"
+                        >
+                          <Trash2 style={{ width: '15px', height: '15px' }} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -342,181 +361,181 @@ export const ProjectsOverviewPage: React.FC = () => {
 
       {/* Create Project Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-slide-up">
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
-              <h3 className="font-bold text-base">Create Enterprise Project</h3>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
+        <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+              <div className="modal-header bg-gradient-dark-header text-white border-0 px-4 py-3">
+                <h5 className="modal-title fw-bold text-white mb-0" style={{ fontSize: '1rem' }}>Create ProjectPulse Project</h5>
+                <button onClick={() => setIsCreateModalOpen(false)} className="btn-close btn-close-white shadow-none"></button>
+              </div>
+
+              <form onSubmit={handleCreateSubmit} className="modal-body p-4">
+                <div className="row g-3 mb-3">
+                  <div className="col-8">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Project Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. ProjectPulse Platform"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                    />
+                  </div>
+                  <div className="col-4">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Project Code</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="NEXUS"
+                      value={formData.code}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm text-uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Description</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the scope and deliverables of this project..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                  />
+                </div>
+
+                <div className="row g-3 mb-4">
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Start Date</label>
+                    <input
+                      type="date"
+                      min={todayStr}
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>End Date</label>
+                    <input
+                      type="date"
+                      min={formData.startDate || todayStr}
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="btn btn-sm btn-light fw-semibold text-secondary px-3 rounded-3"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 shadow-sm"
+                  >
+                    Save Project
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Project Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Nexus PM Platform"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Project Code</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="NEXUS"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  placeholder="Describe the scope and deliverables of this project..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    min={todayStr}
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    min={formData.startDate || todayStr}
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-gradient-primary rounded-xl shadow-md"
-                >
-                  Save Project
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
 
       {/* Edit Project Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-slide-up">
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
-              <h3 className="font-bold text-base">Edit Project Details</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+        <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+              <div className="modal-header bg-gradient-dark-header text-white border-0 px-4 py-3">
+                <h5 className="modal-title fw-bold text-white mb-0" style={{ fontSize: '1rem' }}>Edit Project Details</h5>
+                <button onClick={() => setIsEditModalOpen(false)} className="btn-close btn-close-white shadow-none"></button>
+              </div>
 
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Project Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+              <form onSubmit={handleEditSubmit} className="modal-body p-4">
+                <div className="row g-3 mb-3">
+                  <div className="col-8">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Project Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                    />
+                  </div>
+                  <div className="col-4">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="COMPLETED">COMPLETED</option>
+                      <option value="ARCHIVED">ARCHIVED</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Description</label>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
+
+                <div className="row g-3 mb-4">
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Start Date</label>
+                    <input
+                      type="date"
+                      min={todayStr}
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>End Date</label>
+                    <input
+                      type="date"
+                      min={formData.startDate || todayStr}
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="btn btn-sm btn-light fw-semibold text-secondary px-3 rounded-3"
                   >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="COMPLETED">COMPLETED</option>
-                    <option value="ARCHIVED">ARCHIVED</option>
-                  </select>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 shadow-sm"
+                  >
+                    Update Project
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    min={todayStr}
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    min={formData.startDate || todayStr}
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-gradient-primary rounded-xl shadow-md"
-                >
-                  Update Project
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}

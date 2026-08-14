@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Send, Sparkles, User as UserIcon, Code2, Database } from 'lucide-react';
+import { Bot, Send, Sparkles, User as UserIcon } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { ApiResponse } from '../types';
 
@@ -69,47 +69,49 @@ export const AiAssistantPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-10rem)] flex flex-col space-y-4">
+    <div className="container-fluid p-0 max-w-4xl mx-auto d-flex flex-column gap-3" style={{ height: 'calc(100vh - 10rem)', maxWidth: '900px' }}>
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-gradient-accent flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-          <Bot className="h-5 w-5" />
+      <div className="d-flex align-items-center gap-3">
+        <div className="rounded-3 bg-gradient-accent d-flex align-items-center justify-center text-white shadow-sm" style={{ width: '40px', height: '40px' }}>
+          <Bot style={{ width: '22px', height: '22px' }} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">AI Project Assistant</h2>
-          <p className="text-xs text-slate-500 font-medium">
+          <h2 className="h4 fw-bold text-dark mb-0">AI Project Assistant</h2>
+          <p className="small text-muted mb-0">
             Natural language project intelligence with secure function calling.
           </p>
         </div>
       </div>
 
       {/* Chat Conversation Box */}
-      <div className="flex-1 glass-panel rounded-2xl border border-slate-200 p-6 overflow-y-auto space-y-4">
+      <div className="card card-glass rounded-4 border-0 p-4 flex-grow-1 overflow-auto d-flex flex-column gap-3 shadow-sm bg-white">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
+            className={`d-flex align-items-start gap-2.5 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
           >
             <div
-              className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-xs ${
+              className={`rounded-3 d-flex align-items-center justify-center text-white fw-bold shrink-0 ${
                 msg.sender === 'user' ? 'bg-gradient-primary' : 'bg-gradient-accent'
               }`}
+              style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}
             >
-              {msg.sender === 'user' ? <UserIcon className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+              {msg.sender === 'user' ? <UserIcon style={{ width: '16px', height: '16px' }} /> : <Bot style={{ width: '16px', height: '16px' }} />}
             </div>
 
             <div
-              className={`max-w-lg p-4 rounded-2xl text-xs leading-relaxed ${
+              className={`p-3 rounded-4 small ${
                 msg.sender === 'user'
-                  ? 'bg-gradient-primary text-white shadow-md shadow-indigo-500/10'
-                  : 'bg-white border border-slate-200 text-slate-800 shadow-sm'
+                  ? 'bg-gradient-primary text-white shadow-sm'
+                  : 'bg-light text-dark border'
               }`}
+              style={{ maxWidth: '75%', fontSize: '0.82rem', lineHeight: '1.45' }}
             >
-              <p className="whitespace-pre-wrap font-medium">{msg.text}</p>
+              <p className="mb-0 fw-medium" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
 
               {msg.actionExecuted && msg.actionExecuted !== 'NONE' && (
-                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] font-extrabold text-sky-600 uppercase tracking-wider">
-                  <Sparkles className="h-3 w-3" />
+                <div className="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex align-items-center gap-1 small text-info fw-bold text-uppercase" style={{ fontSize: '0.65rem' }}>
+                  <Sparkles style={{ width: '12px', height: '12px' }} />
                   <span>Executed Tool: {msg.actionExecuted}</span>
                 </div>
               )}
@@ -118,29 +120,29 @@ export const AiAssistantPage: React.FC = () => {
         ))}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-            <Bot className="h-4 w-4 animate-bounce text-sky-500" />
+          <div className="d-flex align-items-center gap-2 small fw-semibold text-muted">
+            <Bot className="animate-bounce text-info" style={{ width: '16px', height: '16px' }} />
             <span>AI Assistant is analyzing project data...</span>
           </div>
         )}
       </div>
 
       {/* Input Box */}
-      <form onSubmit={handleSend} className="flex gap-3">
+      <form onSubmit={handleSend} className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask AI Assistant e.g. 'Give me a project summary' or 'Search tasks'..."
-          className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-sm"
+          className="form-control bg-white border-end-0 shadow-none text-sm px-4"
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="bg-gradient-accent hover:opacity-95 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md shadow-sky-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
+          className="btn btn-primary bg-gradient-accent border-0 fw-bold px-4 text-sm d-flex align-items-center gap-2"
         >
           <span>Send</span>
-          <Send className="h-3.5 w-3.5" />
+          <Send style={{ width: '14px', height: '14px' }} />
         </button>
       </form>
     </div>

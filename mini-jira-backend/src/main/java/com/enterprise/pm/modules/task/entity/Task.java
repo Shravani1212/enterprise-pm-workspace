@@ -75,6 +75,9 @@ public class Task extends BaseEntity {
     @Builder.Default
     private String escalationLevel = "NONE";
 
+    @Column(name = "delay_reason", columnDefinition = "TEXT")
+    private String delayReason;
+
     @Column(name = "attachment_path", length = 500)
     private String attachmentPath;
 

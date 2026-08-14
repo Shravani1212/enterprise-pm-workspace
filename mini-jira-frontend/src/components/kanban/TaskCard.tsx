@@ -25,34 +25,34 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onCardClick }) => {
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const getPriorityBadgeStyle = (code: string) => {
+  const getPriorityBadgeStyle = (code?: string) => {
     switch (code) {
-      case 'CRITICAL': return 'bg-rose-50 text-rose-700 border-rose-200';
-      case 'HIGH': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'MEDIUM': return 'bg-blue-50 text-blue-700 border-blue-200';
-      default: return 'bg-slate-50 text-slate-600 border-slate-200';
+      case 'CRITICAL': return 'badge-subtle-danger';
+      case 'HIGH': return 'badge-subtle-warning';
+      case 'MEDIUM': return 'badge-subtle-primary';
+      default: return 'bg-light text-secondary border';
     }
   };
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, cursor: 'grab' }}
       {...attributes}
       {...listeners}
       onClick={() => onCardClick?.(task)}
-      className="glass-card p-4 rounded-xl cursor-grab active:cursor-grabbing border border-slate-200/80 mb-3 group hover:border-brand-500/50 transition-all select-none"
+      className="card card-hover-lift border-0 shadow-sm rounded-3 p-3 mb-3 user-select-none"
     >
       {/* Labels & Tags */}
       {task.labels && task.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2.5">
+        <div className="d-flex flex-wrap gap-1 mb-2">
           {task.labels.map((label) => (
             <span
               key={label.id}
-              style={{ backgroundColor: `${label.color}15`, color: label.color, borderColor: `${label.color}30` }}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 uppercase tracking-wider"
+              style={{ backgroundColor: `${label.color}15`, color: label.color, borderColor: `${label.color}30`, fontSize: '0.65rem' }}
+              className="badge border d-flex align-items-center gap-1 text-uppercase rounded-pill px-2 py-1"
             >
-              <Tag className="h-2.5 w-2.5" />
+              <Tag style={{ width: '10px', height: '10px' }} />
               {label.name}
             </span>
           ))}
@@ -60,36 +60,36 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onCardClick }) => {
       )}
 
       {/* Task Title */}
-      <h4 className="font-bold text-sm text-slate-900 leading-snug group-hover:text-brand-600 transition-colors mb-1.5">
+      <h4 className="h6 fw-bold text-dark mb-1 text-truncate-2" style={{ fontSize: '0.88rem', lineHeight: '1.3' }}>
         {task.title}
       </h4>
 
       {/* Description Snippet */}
       {task.description && (
-        <p className="text-xs text-slate-500 line-clamp-2 mb-3">
+        <p className="text-muted small mb-2 text-truncate-2" style={{ fontSize: '0.78rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {task.description}
         </p>
       )}
 
       {/* Document/Image Instruction Attachment Badge */}
       {task.attachmentPath && (
-        <div className="mb-2.5 flex items-center justify-between text-[11px] bg-sky-50 text-sky-700 border border-sky-200/80 px-2.5 py-1 rounded-lg">
+        <div className="mb-2 d-flex align-items-center justify-content-between p-2 rounded-2 bg-info bg-opacity-10 border border-info border-opacity-25" style={{ fontSize: '0.75rem' }}>
           <a
             href={`/api/v1/tasks/${task.id}/attachment`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1.5 hover:underline font-semibold text-[11px] truncate max-w-[200px]"
+            className="d-flex align-items-center gap-1.5 text-decoration-none fw-semibold text-info text-truncate"
             title={`View Document Instructions: ${task.attachmentName || 'Attachment'}`}
           >
             {task.attachmentType?.includes('image') ? (
-              <ImageIcon className="h-3.5 w-3.5 text-sky-600 shrink-0" />
+              <ImageIcon style={{ width: '14px', height: '14px' }} />
             ) : (
-              <FileText className="h-3.5 w-3.5 text-sky-600 shrink-0" />
+              <FileText style={{ width: '14px', height: '14px' }} />
             )}
-            <span className="truncate">{task.attachmentName || 'Instructions Document'}</span>
+            <span className="text-truncate" style={{ maxWidth: '180px' }}>{task.attachmentName || 'Instructions Document'}</span>
           </a>
-          <span className="text-[9px] font-bold uppercase bg-sky-200/60 text-sky-800 px-1.5 py-0.5 rounded ml-1 shrink-0">
+          <span className="badge bg-info bg-opacity-25 text-info text-uppercase ms-1" style={{ fontSize: '0.6rem' }}>
             {task.attachmentType?.includes('pdf') ? 'PDF' : task.attachmentType?.includes('image') ? 'IMG' : 'DOC'}
           </span>
         </div>
@@ -97,33 +97,33 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onCardClick }) => {
 
       {/* SLA Timer & Escalation Badge */}
       {task.escalationLevel && task.escalationLevel !== 'NONE' ? (
-        <div className="mb-2.5">
+        <div className="mb-2">
           {task.escalationLevel === 'ADMIN_CRITICAL_ESCALATION' && (
-            <div className="px-2 py-1 rounded-lg bg-rose-500 text-white text-[10px] font-extrabold flex items-center gap-1 shadow-sm animate-pulse">
-              <Clock className="h-3 w-3" />
+            <div className="badge bg-danger text-white w-100 p-2 d-flex align-items-center gap-1 shadow-xs animate-pulse" style={{ fontSize: '0.68rem' }}>
+              <Clock style={{ width: '12px', height: '12px' }} />
               <span>🚨 18d OVERDUE (ADMIN ESCALATED)</span>
             </div>
           )}
           {task.escalationLevel === 'PM_ESCALATION' && (
-            <div className="px-2 py-1 rounded-lg bg-amber-500 text-white text-[10px] font-bold flex items-center gap-1 shadow-sm">
-              <Clock className="h-3 w-3" />
+            <div className="badge bg-warning text-dark w-100 p-2 d-flex align-items-center gap-1 shadow-xs" style={{ fontSize: '0.68rem' }}>
+              <Clock style={{ width: '12px', height: '12px' }} />
               <span>⚠️ 7d OVERDUE (PM ESCALATION)</span>
             </div>
           )}
           {task.escalationLevel === 'DEVELOPER_WARNING' && (
-            <div className="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-semibold flex items-center gap-1">
-              <Clock className="h-3 w-3 text-indigo-500" />
+            <div className="badge badge-subtle-primary w-100 p-2 d-flex align-items-center gap-1" style={{ fontSize: '0.68rem' }}>
+              <Clock style={{ width: '12px', height: '12px' }} />
               <span>⏱️ SLA Warning Threshold</span>
             </div>
           )}
         </div>
       ) : (
-        <div className="mb-2.5 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3 text-slate-400" />
-            <span>Time Logged: {task.loggedHours || 0}h / {task.estimatedHours || 8}h</span>
+        <div className="mb-2 d-flex align-items-center justify-content-between text-muted fw-semibold" style={{ fontSize: '0.72rem' }}>
+          <span className="d-flex align-items-center gap-1">
+            <Clock style={{ width: '12px', height: '12px' }} />
+            <span>Logged: {task.loggedHours || 0}h / {task.estimatedHours || 8}h</span>
           </span>
-          <span className="text-[10px] font-bold text-slate-400">
+          <span className="text-secondary fw-bold" style={{ fontSize: '0.68rem' }}>
             {Math.max(0, (task.estimatedHours || 8) - (task.loggedHours || 0))}h rem
           </span>
         </div>
@@ -132,41 +132,46 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onCardClick }) => {
       {/* Subtask Progress Engine Indicator */}
       {task.subtaskCount > 0 && (
         <div className="mb-3">
-          <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-1">
-            <span className="flex items-center gap-1">
-              <CheckSquare className="h-3 w-3 text-brand-500" />
+          <div className="d-flex justify-content-between align-items-center text-muted fw-semibold mb-1" style={{ fontSize: '0.72rem' }}>
+            <span className="d-flex align-items-center gap-1">
+              <CheckSquare className="text-primary" style={{ width: '12px', height: '12px' }} />
               <span>Subtasks</span>
             </span>
             <span>{task.completedSubtaskCount}/{task.subtaskCount} ({task.progressPercentage}%)</span>
           </div>
-          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+          <div className="progress rounded-pill" style={{ height: '6px' }}>
             <div
-              className="h-full bg-gradient-primary rounded-full transition-all duration-300"
+              className="progress-bar bg-gradient-primary rounded-pill"
+              role="progressbar"
               style={{ width: `${task.progressPercentage}%` }}
+              aria-valuenow={task.progressPercentage}
+              aria-valuemin={0}
+              aria-valuemax={100}
             ></div>
           </div>
         </div>
       )}
 
       {/* Footer Info */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+      <div className="d-flex align-items-center justify-content-between pt-2 border-top">
         {/* Priority Badge */}
-        <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider border ${getPriorityBadgeStyle(task.priority?.code)}`}>
+        <span className={`badge text-uppercase ${getPriorityBadgeStyle(task.priority?.code)}`} style={{ fontSize: '0.65rem', letterSpacing: '0.04em' }}>
           {task.priority?.name || 'MEDIUM'}
         </span>
 
         {/* Assignee Avatar */}
-        <div className="flex items-center gap-1.5">
+        <div className="d-flex align-items-center gap-1">
           {task.assignee ? (
             <div
-              className="h-6 w-6 rounded-full bg-gradient-accent text-white font-bold flex items-center justify-center text-[10px] shadow-sm"
+              className="rounded-circle bg-gradient-accent text-white fw-bold d-flex align-items-center justify-center shadow-xs"
+              style={{ width: '24px', height: '24px', fontSize: '0.65rem' }}
               title={`${task.assignee.firstName} ${task.assignee.lastName}`}
             >
               {task.assignee.firstName[0]}
             </div>
           ) : (
-            <div className="h-6 w-6 rounded-full bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center" title="Unassigned">
-              <UserIcon className="h-3 w-3" />
+            <div className="rounded-circle bg-light border text-muted d-flex align-items-center justify-center" style={{ width: '24px', height: '24px' }} title="Unassigned">
+              <UserIcon style={{ width: '12px', height: '12px' }} />
             </div>
           )}
         </div>

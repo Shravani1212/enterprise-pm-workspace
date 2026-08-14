@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Task } from '../../types';
-import { format, addDays, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, addDays, differenceInDays, startOfWeek } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight, User as UserIcon } from 'lucide-react';
 
 interface GanttChartProps {
@@ -18,74 +18,65 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
   const handleNextWeek = () => setCurrentStartDate((prev) => addDays(prev, 7));
   const handleToday = () => setCurrentStartDate(startOfWeek(new Date()));
 
-  const getPriorityColor = (code?: string) => {
-    switch (code) {
-      case 'CRITICAL': return '#rose-500';
-      case 'HIGH': return '#amber-500';
-      case 'MEDIUM': return '#3b82f6';
-      default: return '#64748b';
-    }
-  };
-
   return (
-    <div className="glass-panel rounded-2xl border border-slate-200/80 overflow-hidden flex flex-col">
+    <div className="card card-glass border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column">
       {/* Controls Bar */}
-      <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-        <div className="flex items-center gap-3">
-          <Calendar className="h-5 w-5 text-brand-600" />
-          <h3 className="font-bold text-sm text-slate-900">Project Timeline & Gantt Chart</h3>
+      <div className="p-3 border-bottom d-flex align-items-center justify-content-between bg-light">
+        <div className="d-flex align-items-center gap-2">
+          <Calendar className="text-primary" style={{ width: '18px', height: '18px' }} />
+          <h3 className="h6 fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>Project Timeline & Gantt Chart</h3>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="btn-group btn-group-sm shadow-xs">
           <button
             onClick={handleToday}
-            className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+            className="btn btn-outline-secondary fw-semibold bg-white"
           >
             Today
           </button>
           <button
             onClick={handlePrevWeek}
-            className="p-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-all"
+            className="btn btn-outline-secondary bg-white"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft style={{ width: '14px', height: '14px' }} />
           </button>
           <button
             onClick={handleNextWeek}
-            className="p-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-all"
+            className="btn btn-outline-secondary bg-white"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight style={{ width: '14px', height: '14px' }} />
           </button>
         </div>
       </div>
 
       {/* Main Grid View */}
-      <div className="overflow-x-auto flex-1">
-        <div className="min-w-[900px]">
+      <div className="overflow-auto flex-grow-1">
+        <div style={{ minWidth: '920px' }}>
           {/* Header Row */}
-          <div className="flex border-b border-slate-200 bg-slate-100/70 text-xs font-bold text-slate-600">
+          <div className="d-flex border-bottom bg-light text-muted small fw-bold" style={{ fontSize: '0.78rem' }}>
             {/* Task Name Column Header */}
-            <div className="w-64 p-3 border-r border-slate-200 shrink-0">Task Name</div>
+            <div className="p-3 border-end shrink-0" style={{ width: '260px' }}>Task Name</div>
 
             {/* Date Columns */}
-            <div className="flex-1 grid grid-cols-14">
+            <div className="flex-grow-1 d-grid" style={{ gridTemplateColumns: 'repeat(14, 1fr)' }}>
               {days.map((day, idx) => (
                 <div
                   key={idx}
-                  className={`p-2 text-center border-r border-slate-200/60 ${
+                  className={`p-2 text-center border-end ${
                     format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                      ? 'bg-brand-50 text-brand-700 font-extrabold'
+                      ? 'bg-primary bg-opacity-10 text-primary fw-extrabold'
                       : ''
                   }`}
                 >
-                  <div className="text-[10px] uppercase text-slate-400">{format(day, 'EEE')}</div>
-                  <div className="text-xs">{format(day, 'd MMM')}</div>
+                  <div className="text-uppercase text-muted" style={{ fontSize: '0.65rem' }}>{format(day, 'EEE')}</div>
+                  <div style={{ fontSize: '0.75rem' }}>{format(day, 'd MMM')}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Task Timeline Rows */}
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y">
             {tasks.map((task) => {
               // Parse task start & end dates (fallback to today if unassigned)
               const taskStart = task.startDate ? new Date(task.startDate) : currentStartDate;
@@ -96,44 +87,46 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
               const duration = Math.max(1, differenceInDays(taskEnd, taskStart) + 1);
 
               return (
-                <div key={task.id} className="flex items-center hover:bg-slate-50/80 transition-colors group">
+                <div key={task.id} className="d-flex align-items-center border-bottom hover-bg-light transition-all">
                   {/* Task Name Cell */}
                   <div
                     onClick={() => onTaskClick?.(task)}
-                    className="w-64 p-3 border-r border-slate-200 shrink-0 cursor-pointer font-semibold text-xs text-slate-800 truncate group-hover:text-brand-600"
+                    className="p-3 border-end shrink-0 cursor-pointer fw-semibold text-truncate text-dark"
+                    style={{ width: '260px', fontSize: '0.8rem' }}
                   >
                     {task.title}
                   </div>
 
                   {/* Timeline Bar Cell Grid */}
-                  <div className="flex-1 grid grid-cols-14 h-12 items-center relative px-1">
+                  <div className="flex-grow-1 d-grid align-items-center position-relative px-1" style={{ gridTemplateColumns: 'repeat(14, 1fr)', height: '48px' }}>
                     {startOffset < 14 && (
                       <div
                         style={{
                           gridColumnStart: startOffset + 1,
                           gridColumnEnd: `span ${Math.min(duration, 14 - startOffset)}`,
+                          height: '28px',
                         }}
-                        className="h-7 rounded-lg bg-gradient-primary shadow-sm flex items-center justify-between px-2 text-white relative group/bar transition-all"
+                        className="rounded-3 bg-gradient-primary shadow-xs d-flex align-items-center justify-content-between px-2 text-white position-relative overflow-hidden"
                       >
                         {/* Progress Fill Indicator */}
                         <div
-                          className="absolute left-0 top-0 bottom-0 bg-white/20 rounded-lg transition-all"
+                          className="position-absolute start-0 top-0 bottom-0 bg-white bg-opacity-25 rounded-3"
                           style={{ width: `${task.progressPercentage}%` }}
                         ></div>
 
                         {/* Title inside bar */}
-                        <span className="text-[11px] font-bold truncate z-10 drop-shadow-sm">
+                        <span className="fw-bold text-truncate position-relative z-1 text-white" style={{ fontSize: '0.72rem' }}>
                           {task.title}
                         </span>
 
                         {/* Assignee Avatar */}
                         {task.assignee ? (
-                          <div className="h-5 w-5 rounded-full bg-white text-brand-600 font-extrabold text-[9px] flex items-center justify-center shrink-0 ml-1 z-10 shadow-xs">
+                          <div className="rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-center ms-1 position-relative z-1 shadow-xs" style={{ width: '20px', height: '20px', fontSize: '0.6rem' }}>
                             {task.assignee.firstName[0]}
                           </div>
                         ) : (
-                          <div className="h-5 w-5 rounded-full bg-slate-300 text-slate-600 text-[9px] flex items-center justify-center shrink-0 ml-1 z-10">
-                            <UserIcon className="h-2.5 w-2.5" />
+                          <div className="rounded-circle bg-secondary bg-opacity-50 text-white d-flex align-items-center justify-center ms-1 position-relative z-1" style={{ width: '20px', height: '20px' }}>
+                            <UserIcon style={{ width: '10px', height: '10px' }} />
                           </div>
                         )}
                       </div>
@@ -144,7 +137,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
             })}
 
             {tasks.length === 0 && (
-              <div className="p-8 text-center text-xs font-medium text-slate-400">
+              <div className="p-4 text-center text-muted small">
                 No tasks available for timeline visualization.
               </div>
             )}

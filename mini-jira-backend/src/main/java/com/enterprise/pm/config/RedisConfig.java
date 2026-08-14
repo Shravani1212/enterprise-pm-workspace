@@ -3,8 +3,11 @@ package com.enterprise.pm.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.interceptor.CacheErrorHandler;
+import org.springframework.cache.interceptor.LoggingCacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -20,10 +23,10 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 @Slf4j
-public class RedisConfig {
+public class RedisConfig implements CachingConfigurer {
 
     @Bean
-    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis", matchIfMissing = true)
+    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
         try {
             RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
@@ -36,16 +39,21 @@ public class RedisConfig {
                     .cacheDefaults(config)
                     .build();
         } catch (Exception e) {
-            log.warn("Redis connection unavailable. Falling back to simple in-memory cache manager.");
+            log.warn("Redis connection unavailable. Falling back to simple in-memory ConcurrentMapCacheManager.");
             return new ConcurrentMapCacheManager();
         }
     }
 
     @Bean
     @Primary
-    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "simple")
+    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "simple", matchIfMissing = true)
     public CacheManager fallbackCacheManager() {
         log.info("Using simple in-memory ConcurrentMapCacheManager for zero-dependency local execution.");
         return new ConcurrentMapCacheManager();
+    }
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new LoggingCacheErrorHandler();
     }
 }

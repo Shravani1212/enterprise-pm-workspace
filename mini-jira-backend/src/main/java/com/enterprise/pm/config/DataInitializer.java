@@ -93,9 +93,9 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Seeding enterprise demo projects, members, tasks, and subtasks...");
 
             Project p1 = projectRepository.save(Project.builder()
-                    .name("Nexus PM Platform v1.0")
-                    .code("NEXUS")
-                    .description("Core Enterprise Project Management platform with real-time Kanban and AI capabilities.")
+                    .name("ProjectPulse Platform v1.0")
+                    .code("PULSE")
+                    .description("Core ProjectPulse Management platform with real-time Kanban and AI capabilities.")
                     .status("ACTIVE")
                     .startDate(LocalDate.now().minusDays(45))
                     .endDate(LocalDate.now().plusDays(60))
@@ -251,14 +251,14 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private TaskStatus getOrCreateStatus(String code, String name, Integer position) {
-        return taskStatusRepository.findByCode(code).orElseGet(() ->
-                taskStatusRepository.save(TaskStatus.builder()
-                        .code(code)
-                        .name(name)
-                        .displayOrder(position)
-                        .active(true)
-                        .build())
-        );
+        return taskStatusRepository.findFirstByProjectIsNullAndCode(code)
+                .orElseGet(() -> taskStatusRepository.findFirstByCode(code)
+                        .orElseGet(() -> taskStatusRepository.save(TaskStatus.builder()
+                                .code(code)
+                                .name(name)
+                                .displayOrder(position)
+                                .active(true)
+                                .build())));
     }
 
     private Priority getOrCreatePriority(String code, String name, Integer level) {

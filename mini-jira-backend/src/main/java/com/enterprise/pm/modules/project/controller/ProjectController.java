@@ -52,6 +52,20 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success("Project member added successfully", projectService.addProjectMember(id, request)));
     }
 
+    @PutMapping("/{id}")
+    @RequireProjectAccess(paramName = "id")
+    public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(@PathVariable("id") Long id,
+                                                                       @Valid @RequestBody ProjectUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Project updated successfully", projectService.updateProject(id, request)));
+    }
+
+    @DeleteMapping("/{id}")
+    @RequireProjectAccess(paramName = "id")
+    public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable("id") Long id) {
+        projectService.deleteProject(id);
+        return ResponseEntity.ok(ApiResponse.success("Project deleted successfully", null));
+    }
+
     @DeleteMapping("/{id}/members/{userId}")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<Void>> removeProjectMember(@PathVariable("id") Long id,

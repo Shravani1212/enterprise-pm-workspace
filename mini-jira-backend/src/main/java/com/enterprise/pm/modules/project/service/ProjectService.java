@@ -18,7 +18,6 @@ import com.enterprise.pm.modules.project.repository.ProjectSettingsRepository;
 import com.enterprise.pm.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +46,10 @@ public class ProjectService {
                 ? projectRepository.findAll()
                 : projectRepository.findProjectsByUserId(currentUser.getId());
 
-        return projects.stream().map(ProjectMapper::toProjectResponse).toList();
+        return projects.stream().map(p -> {
+            List<ProjectMemberResponse> members = getProjectMembers(p.getId());
+            return ProjectMapper.toProjectResponse(p, members);
+        }).toList();
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +57,8 @@ public class ProjectService {
     public ProjectResponse getProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with ID: " + id));
-        return ProjectMapper.toProjectResponse(project);
+        List<ProjectMemberResponse> members = getProjectMembers(id);
+        return ProjectMapper.toProjectResponse(project, members);
     }
 
     @Transactional
@@ -65,17 +68,25 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with ID: " + id));
 
         LocalDate today = LocalDate.now();
-        if (request.startDate() != null && request.startDate().isBefore(today)) {
+        if (request.startDate() != null && request.startDate().isBefore(today.minusDays(1))) {
             throw new IllegalArgumentException("Project start date cannot be in the past. Select today or a future date.");
         }
         if (request.endDate() != null && request.startDate() != null && request.endDate().isBefore(request.startDate())) {
             throw new IllegalArgumentException("Project end date must be on or after start date.");
         }
 
-        project.setName(request.name());
-        project.setDescription(request.description());
-        project.setStartDate(request.startDate());
-        project.setEndDate(request.endDate());
+        if (request.name() != null && !request.name().isBlank()) {
+            project.setName(request.name());
+        }
+        if (request.description() != null) {
+            project.setDescription(request.description());
+        }
+        if (request.startDate() != null) {
+            project.setStartDate(request.startDate());
+        }
+        if (request.endDate() != null) {
+            project.setEndDate(request.endDate());
+        }
 
         Project updatedProject = projectRepository.save(project);
         return ProjectMapper.toProjectResponse(updatedProject);
@@ -88,7 +99,7 @@ public class ProjectService {
         }
 
         LocalDate today = LocalDate.now();
-        if (request.startDate() != null && request.startDate().isBefore(today)) {
+        if (request.startDate() != null && request.startDate().isBefore(today.minusDays(1))) {
             throw new IllegalArgumentException("Project start date cannot be in the past. Select today or a future date.");
         }
         if (request.endDate() != null && request.startDate() != null && request.endDate().isBefore(request.startDate())) {
@@ -120,7 +131,11 @@ public class ProjectService {
 
         // 2. Add creator as PROJECT_MANAGER member
         Role managerRole = roleRepository.findByCode("PROJECT_MANAGER")
-                .orElseThrow(() -> new ResourceNotFoundException("Role PROJECT_MANAGER not found"));
+                .orElseGet(() -> roleRepository.save(Role.builder()
+                        .code("PROJECT_MANAGER")
+                        .name("Project Manager")
+                        .description("Project and team management access")
+                        .build()));
 
         ProjectMember member = ProjectMember.builder()
                 .project(savedProject)
@@ -176,6 +191,14 @@ public class ProjectService {
 
         member.setActive(false);
         projectMemberRepository.save(member);
+    }
+
+    @Transactional
+    @CacheEvict(value = "projects", key = "#id")
+    public void deleteProject(Long id) {
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with ID: " + id));
+        projectRepository.delete(project);
     }
 
     private void seedProjectStatuses(Project project) {

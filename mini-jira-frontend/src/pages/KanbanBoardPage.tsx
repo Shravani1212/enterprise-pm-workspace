@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../services/apiClient';
@@ -13,8 +13,18 @@ import { RefreshCw, Zap } from 'lucide-react';
 
 export const KanbanBoardPage: React.FC = () => {
   const { projectId } = useParams();
-  const activeProjectId = projectId || '1';
-  const [simulationEnabled, setSimulationEnabled] = useState(true);
+  const [firstProjectId, setFirstProjectId] = useState<string>('1');
+  const [simulationEnabled, setSimulationEnabled] = useState(false);
+
+  useEffect(() => {
+    apiClient.get('/projects').then((res) => {
+      if (res.data?.success && res.data?.data?.length > 0) {
+        setFirstProjectId(String(res.data.data[0].id));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const activeProjectId = projectId || firstProjectId;
 
   // 1. Two-way URL Sync Hook
   const { filters, setFilters, resetFilters } = useTaskFiltersUrlSync();
@@ -40,7 +50,7 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  // 5. Fetch Project Members (for Rule 8 filter dropdown)
+  // 5. Fetch Project Members
   const { data: membersData } = useQuery({
     queryKey: ['projects', activeProjectId, 'members'],
     queryFn: async () => {
@@ -100,40 +110,37 @@ export const KanbanBoardPage: React.FC = () => {
 
   if (isStatusesLoading || isTasksLoading) {
     return (
-      <div className="flex items-center justify-center h-96 text-slate-500">
-        <RefreshCw className="h-6 w-6 animate-spin text-brand-500 mr-2" />
-        <span className="text-sm font-semibold">Loading Workspace & Executing Filters...</span>
+      <div className="d-flex align-items-center justify-content-center text-muted" style={{ height: '380px' }}>
+        <RefreshCw className="animate-spin text-primary me-2" style={{ width: '24px', height: '24px' }} />
+        <span className="fw-semibold small">Loading Workspace & Executing Filters...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="container-fluid p-0 d-flex flex-column gap-3">
       {/* View Header Bar */}
-      <div className="flex items-center justify-between">
+      <div className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Kanban Workspace</h2>
-          <p className="text-xs text-slate-500 font-medium">
+          <h2 className="h4 fw-bold text-dark mb-1">Kanban Workspace</h2>
+          <p className="small text-muted mb-0">
             Multi-criteria search, two-way URL sync, and optimistic UI state engine.
           </p>
         </div>
 
-        {/* Simulation Toggle */}
-        <div className="flex items-center gap-3 glass-panel px-4 py-2 rounded-xl border border-slate-200">
-          <Zap className={`h-4 w-4 ${simulationEnabled ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
-          <span className="text-xs font-semibold text-slate-700">1.5s Latency & 15% Error Simulation:</span>
-          <button
-            onClick={() => setSimulationEnabled(!simulationEnabled)}
-            className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              simulationEnabled ? 'bg-brand-500' : 'bg-slate-300'
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                simulationEnabled ? 'translate-x-5' : 'translate-x-0'
-              }`}
+        {/* Simulation Toggle Switch */}
+        <div className="card card-glass border-0 px-3 py-2 rounded-3 shadow-xs d-flex flex-row align-items-center gap-2">
+          <Zap style={{ width: '16px', height: '16px' }} className={simulationEnabled ? 'text-warning fill-warning' : 'text-muted'} />
+          <span className="small fw-semibold text-dark me-2" style={{ fontSize: '0.78rem' }}>1.5s Latency & 15% Error Sim:</span>
+          <div className="form-check form-switch mb-0">
+            <input
+              className="form-check-input shadow-none cursor-pointer"
+              type="checkbox"
+              role="switch"
+              checked={simulationEnabled}
+              onChange={(e) => setSimulationEnabled(e.target.checked)}
             />
-          </button>
+          </div>
         </div>
       </div>
 

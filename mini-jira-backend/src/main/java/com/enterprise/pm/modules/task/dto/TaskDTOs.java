@@ -42,13 +42,15 @@ public class TaskDTOs {
         Integer estimatedHours,
         Integer loggedHours,
         String escalationLevel,
+        String delayReason,
         Set<Long> labelIds,
         Long version
     ) {}
 
     public record TaskStatusUpdateRequest(
         @NotNull(message = "Status ID is required")
-        Long statusId
+        Long statusId,
+        String delayReason
     ) {}
 
     public record TaskAssigneeUpdateRequest(
@@ -87,6 +89,7 @@ public class TaskDTOs {
         Integer estimatedHours,
         Integer loggedHours,
         String escalationLevel,
+        String delayReason,
         String attachmentPath,
         String attachmentName,
         String attachmentType,

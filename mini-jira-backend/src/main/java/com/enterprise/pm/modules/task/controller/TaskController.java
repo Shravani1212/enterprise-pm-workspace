@@ -75,7 +75,7 @@ public class TaskController {
                                                                        @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
         verifyProjectAccess(currentUser, projectId);
-        return ResponseEntity.ok(ApiResponse.success("Task status updated", taskService.patchTaskStatus(id, request.statusId())));
+        return ResponseEntity.ok(ApiResponse.success("Task status updated", taskService.patchTaskStatus(id, request.statusId(), request.delayReason())));
     }
 
     @PatchMapping("/tasks/{id}/assignee")

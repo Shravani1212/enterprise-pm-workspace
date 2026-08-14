@@ -20,19 +20,19 @@ export const GanttPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96 text-slate-500">
-        <RefreshCw className="h-6 w-6 animate-spin text-brand-500 mr-2" />
-        <span className="text-sm font-semibold">Loading Gantt Timeline...</span>
+      <div className="d-flex align-items-center justify-content-center text-muted" style={{ height: '380px' }}>
+        <RefreshCw className="animate-spin text-primary me-2" style={{ width: '24px', height: '24px' }} />
+        <span className="fw-semibold small">Loading Gantt Timeline...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container-fluid p-0 d-flex flex-column gap-4">
       {/* View Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Gantt Timeline View</h2>
-        <p className="text-xs text-slate-500 font-medium">
+        <h2 className="h4 fw-bold text-dark mb-1">Gantt Timeline View</h2>
+        <p className="small text-muted mb-0">
           Visualize project schedule, start/end dates, and subtask execution progress across timelines.
         </p>
       </div>

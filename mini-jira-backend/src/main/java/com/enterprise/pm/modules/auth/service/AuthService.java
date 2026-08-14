@@ -60,8 +60,8 @@ public class AuthService {
                 .username(request.username())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .firstName(request.firstName())
-                .lastName(request.lastName())
+                .firstName(request.firstName() != null && !request.firstName().isBlank() ? request.firstName() : request.username())
+                .lastName(request.lastName() != null && !request.lastName().isBlank() ? request.lastName() : "User")
                 .status("ACTIVE")
                 .build();
 
@@ -233,6 +233,13 @@ public class AuthService {
 
         User updatedUser = userRepository.save(user);
         return UserMapper.toUserResponse(updatedUser);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(UserMapper::toUserResponse)
+                .toList();
     }
 
     private String hashToken(String rawToken) {

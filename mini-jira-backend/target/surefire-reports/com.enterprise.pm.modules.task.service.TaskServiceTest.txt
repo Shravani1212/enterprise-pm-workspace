@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.enterprise.pm.modules.task.service.TaskServiceTest
--------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.577 s -- in com.enterprise.pm.modules.task.service.TaskServiceTest

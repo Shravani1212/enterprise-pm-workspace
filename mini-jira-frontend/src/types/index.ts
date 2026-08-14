@@ -97,6 +97,7 @@ export interface Task {
   estimatedHours?: number;
   loggedHours?: number;
   escalationLevel?: string;
+  delayReason?: string;
   attachmentPath?: string;
   attachmentName?: string;
   attachmentType?: string;

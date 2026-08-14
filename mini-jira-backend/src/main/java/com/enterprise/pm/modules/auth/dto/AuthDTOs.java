@@ -32,10 +32,7 @@ public class AuthDTOs {
         @Size(min = 6, message = "Password must be at least 6 characters")
         String password,
 
-        @NotBlank(message = "First name is required")
         String firstName,
-
-        @NotBlank(message = "Last name is required")
         String lastName,
 
         Set<Long> roleIds,

@@ -24,6 +24,9 @@ spring:
           order_updates: true
         generate_statistics: false
 
+  cache:
+    type: ${SPRING_CACHE_TYPE:simple}
+
   data:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}

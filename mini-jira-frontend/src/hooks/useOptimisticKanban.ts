@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Task, TaskStatus } from '../types';
 import apiClient from '../services/apiClient';
 
@@ -11,10 +11,14 @@ interface UseOptimisticKanbanProps {
 export const useOptimisticKanban = ({
   initialTasks,
   statuses,
-  enableSimulation = true,
+  enableSimulation = false,
 }: UseOptimisticKanbanProps) => {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [toasts, setToasts] = useState<Array<{ id: string; type: 'success' | 'error' | 'warning'; text: string }>>([]);
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
 
   const addToast = (type: 'success' | 'error' | 'warning', text: string) => {
     const id = Math.random().toString();

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Bell, Sparkles, Plus } from 'lucide-react';
+import { Search, Bell, Sparkles, Plus, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface NavbarProps {
   onSearchChange?: (val: string) => void;
@@ -8,42 +9,63 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onNewTaskClick }) => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
-    <header className="h-16 glass-panel border-b border-slate-200/80 px-8 flex items-center justify-between sticky top-0 z-20">
-      {/* Search Input Bar */}
-      <div className="relative w-96">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search tasks, assignees, or labels..."
-          value={searchValue || ''}
-          onChange={(e) => onSearchChange?.(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-slate-400"
-        />
-      </div>
+    <header className="navbar navbar-expand bg-white border-bottom px-4 py-2 sticky-top shadow-sm z-3" style={{ height: '64px' }}>
+      <div className="container-fluid p-0 d-flex align-items-center justify-content-between">
+        {/* Search Input Bar */}
+        <div className="input-group" style={{ maxWidth: '380px' }}>
+          <span className="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+            <Search className="h-4 w-4" style={{ width: '16px', height: '16px' }} />
+          </span>
+          <input
+            type="text"
+            placeholder="Search tasks, assignees, or labels..."
+            value={searchValue || ''}
+            onChange={(e) => onSearchChange?.(e.target.value)}
+            className="form-control form-control-sm bg-light border-start-0 rounded-end-3 text-sm shadow-none"
+          />
+        </div>
 
-      {/* Action Bar */}
-      <div className="flex items-center gap-4">
-        {onNewTaskClick && (
+        {/* Action Bar */}
+        <div className="d-flex align-items-center gap-3">
+          {onNewTaskClick && (
+            <button
+              onClick={onNewTaskClick}
+              className="btn btn-sm btn-primary bg-gradient-primary border-0 rounded-3 d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm"
+            >
+              <Plus className="h-4 w-4" style={{ width: '16px', height: '16px' }} />
+              <span>New Task</span>
+            </button>
+          )}
+
+          {/* Sun / Moon Theme Toggle */}
           <button
-            onClick={onNewTaskClick}
-            className="flex items-center gap-2 bg-gradient-primary hover:opacity-95 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-md shadow-indigo-500/20 transition-all"
+            onClick={toggleTheme}
+            className="btn btn-sm btn-light rounded-3 p-2 text-muted border-0 d-flex align-items-center justify-center"
+            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
           >
-            <Plus className="h-4 w-4" />
-            <span>New Task</span>
+            {theme === 'light' ? (
+              <Moon style={{ width: '20px', height: '20px' }} />
+            ) : (
+              <Sun className="text-warning" style={{ width: '20px', height: '20px' }} />
+            )}
           </button>
-        )}
 
-        <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-600 ring-2 ring-white"></span>
-        </button>
+          <button className="btn btn-sm btn-light position-relative rounded-3 p-2 text-muted border-0">
+            <Bell style={{ width: '20px', height: '20px' }} />
+            <span className="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle">
+              <span className="visually-hidden">New alerts</span>
+            </span>
+          </button>
 
-        <div className="h-6 w-px bg-slate-200"></div>
+          <div className="vr bg-secondary opacity-25" style={{ height: '24px' }}></div>
 
-        <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200/60 text-xs font-semibold text-slate-700">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-          <span>Active Workspace</span>
+          <div className="badge badge-subtle-warning d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-dark fw-bold" style={{ fontSize: '0.75rem' }}>
+            <Sparkles className="text-warning fill-warning" style={{ width: '14px', height: '14px' }} />
+            <span>Active Workspace</span>
+          </div>
         </div>
       </div>
     </header>

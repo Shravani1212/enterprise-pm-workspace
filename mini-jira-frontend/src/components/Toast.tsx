@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
 export interface ToastMessage {
@@ -14,32 +14,34 @@ interface ToastProps {
 
 export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full">
+    <div className="position-fixed bottom-0 end-0 p-4 z-3 d-flex flex-column gap-2" style={{ maxWidth: '380px', width: '100%' }}>
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`glass-panel p-4 rounded-xl shadow-lg border flex items-center justify-between gap-3 animate-slide-up ${
+          className={`alert alert-dismissible fade show shadow-lg rounded-3 mb-0 d-flex align-items-center justify-between border ${
             toast.type === 'error'
-              ? 'bg-rose-50/90 text-rose-800 border-rose-200'
+              ? 'alert-danger'
               : toast.type === 'warning'
-              ? 'bg-amber-50/90 text-amber-800 border-amber-200'
-              : 'bg-emerald-50/90 text-emerald-800 border-emerald-200'
+              ? 'alert-warning'
+              : 'alert-success'
           }`}
+          style={{ animation: 'slideUp 0.25s ease-out' }}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="d-flex align-items-center gap-2 me-3">
             {toast.type === 'error' ? (
-              <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
+              <AlertCircle className="text-danger flex-shrink-0" style={{ width: '18px', height: '18px' }} />
             ) : (
-              <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+              <CheckCircle className="text-success flex-shrink-0" style={{ width: '18px', height: '18px' }} />
             )}
-            <span className="text-xs font-semibold leading-snug">{toast.text}</span>
+            <span className="fw-semibold small leading-snug">{toast.text}</span>
           </div>
           <button
+            type="button"
             onClick={() => onDismiss(toast.id)}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-          >
-            <X className="h-4 w-4" />
-          </button>
+            className="btn-close shadow-none"
+            style={{ position: 'relative', padding: '0.5rem', top: 0, right: 0 }}
+            aria-label="Close"
+          ></button>
         </div>
       ))}
     </div>

@@ -28,36 +28,38 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className="w-80 shrink-0 bg-slate-50/70 rounded-2xl border border-slate-200/80 p-4 flex flex-col max-h-full glass-panel"
+      className="card card-glass border-0 shadow-sm rounded-4 p-3 d-flex flex-column max-h-100 flex-shrink-0"
+      style={{ width: '320px' }}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+      <div className="d-flex align-items-center justify-content-between mb-3">
+        <div className="d-flex align-items-center gap-2">
           <span
-            className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: status.color }}
+            className="rounded-circle d-inline-block"
+            style={{ width: '10px', height: '10px', backgroundColor: status.color }}
           ></span>
-          <h3 className="font-bold text-sm text-slate-900">{status.name}</h3>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-700">
+          <h3 className="h6 fw-bold mb-0 text-dark" style={{ fontSize: '0.9rem' }}>{status.name}</h3>
+          <span className="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-1" style={{ fontSize: '0.7rem' }}>
             {tasks.length}
           </span>
         </div>
 
-        {/* Capacity Warning Indicator (Rule 24) */}
+        {/* Capacity Warning Indicator */}
         {status.capacityLimit > 0 && (
           <div
-            className={`text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1 border ${
+            className={`badge d-flex align-items-center gap-1 border px-2 py-1 ${
               isCapacityExceeded
-                ? 'bg-rose-100 text-rose-700 border-rose-300 animate-pulse'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
+                ? 'badge-subtle-danger animate-pulse'
+                : 'bg-light text-secondary border-secondary border-opacity-25'
             }`}
+            style={{ fontSize: '0.7rem' }}
             title={
               isCapacityExceeded
                 ? `WIP Limit Exceeded! Max capacity is ${status.capacityLimit}`
                 : `WIP Limit: ${status.capacityLimit}`
             }
           >
-            {isCapacityExceeded && <AlertTriangle className="h-3.5 w-3.5" />}
+            {isCapacityExceeded && <AlertTriangle style={{ width: '12px', height: '12px' }} />}
             <span>
               {tasks.length}/{status.capacityLimit}
             </span>
@@ -66,7 +68,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* Task List Drop Zone */}
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-grow-1 overflow-auto pe-1">
         <SortableContext
           items={tasks.map((t) => t.id.toString())}
           strategy={verticalListSortingStrategy}
@@ -77,7 +79,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </SortableContext>
 
         {tasks.length === 0 && (
-          <div className="h-32 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-xs font-medium text-slate-400">
+          <div className="border border-2 border-dashed rounded-3 d-flex align-items-center justify-center text-muted small py-5 my-2">
             Drop task here
           </div>
         )}
@@ -86,9 +88,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       {/* Quick Add Button */}
       <button
         onClick={() => onAddTaskClick?.(status.id)}
-        className="mt-3 w-full py-2 border border-dashed border-slate-300 hover:border-brand-500 hover:bg-brand-50/50 text-slate-600 hover:text-brand-600 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+        className="btn btn-sm btn-outline-primary border-dashed rounded-3 w-100 d-flex align-items-center justify-center gap-1.5 mt-2 fw-semibold"
+        style={{ fontSize: '0.8rem' }}
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus style={{ width: '14px', height: '14px' }} />
         <span>Add Task</span>
       </button>
     </div>

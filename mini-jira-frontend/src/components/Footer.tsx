@@ -3,27 +3,27 @@ import { ShieldCheck, GitBranch, ExternalLink } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="mt-auto border-t border-slate-200/80 bg-white/80 backdrop-blur-md px-8 py-4 text-xs text-slate-500">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <footer className="mt-auto border-top bg-white px-4 py-3 text-secondary small">
+      <div className="container-fluid p-0 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
         {/* Left Side: System Version & Health Status */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 font-medium text-slate-700">
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
-            <span>Enterprise PM System v1.0.0</span>
+        <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2 fw-semibold text-dark">
+            <ShieldCheck className="text-success" style={{ width: '16px', height: '16px' }} />
+            <span>ProjectPulse System v1.0.0</span>
           </div>
 
-          <span className="hidden sm:inline text-slate-300">|</span>
+          <span className="d-none d-sm-inline text-muted opacity-50">|</span>
 
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <div className="d-flex align-items-center gap-2 text-muted">
+            <span className="bg-success rounded-circle d-inline-block" style={{ width: '8px', height: '8px' }}></span>
             <span>API Gateway (/api/v1) Healthy</span>
           </div>
         </div>
 
         {/* Right Side: Quick Links & Environment */}
-        <div className="flex items-center gap-5 font-medium">
-          <div className="flex items-center gap-1 text-slate-400">
-            <GitBranch className="h-3.5 w-3.5" />
+        <div className="d-flex align-items-center gap-4 fw-medium">
+          <div className="d-flex align-items-center gap-1.5 text-muted">
+            <GitBranch style={{ width: '14px', height: '14px' }} />
             <span>main (Java 21 / React 18)</span>
           </div>
 
@@ -31,10 +31,10 @@ export const Footer: React.FC = () => {
             href="/api/v1/actuator/health"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-indigo-600 transition-colors flex items-center gap-1"
+            className="text-decoration-none text-primary d-flex align-items-center gap-1"
           >
             <span>Actuator</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink style={{ width: '12px', height: '12px' }} />
           </a>
         </div>
       </div>

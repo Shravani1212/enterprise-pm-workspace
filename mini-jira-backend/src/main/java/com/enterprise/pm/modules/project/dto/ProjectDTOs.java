@@ -43,6 +43,7 @@ public class ProjectDTOs {
         LocalDate startDate,
         LocalDate endDate,
         UserResponse createdBy,
+        List<ProjectMemberResponse> members,
         Instant createdAt,
         Instant updatedAt,
         Long version

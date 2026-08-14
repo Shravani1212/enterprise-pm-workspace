@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Sparkles, X, Send, Maximize2, Minimize2, Lightbulb } from 'lucide-react';
+import { Bot, Sparkles, X, Send, Maximize2, Lightbulb } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const FloatingAiAssistant: React.FC = () => {
@@ -7,7 +7,7 @@ export const FloatingAiAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
     {
       sender: 'ai',
-      text: 'Hello! I am your Nexus AI Project Copilot. How can I assist your team today?',
+      text: 'Hello! I am your ProjectPulse AI Copilot. How can I assist your team today?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -22,7 +22,7 @@ export const FloatingAiAssistant: React.FC = () => {
     setInput('');
 
     setTimeout(() => {
-      let reply = "I've analyzed your workspace. You have 3 critical tasks pending in Nexus PM Platform v1.0.";
+      let reply = "I've analyzed your workspace. You have 3 critical tasks pending in ProjectPulse Platform v1.0.";
       if (userMsg.toLowerCase().includes('task') || userMsg.toLowerCase().includes('pending')) {
         reply = "⚠️ Attention: 'Fix Critical Memory Leak in Auth Token Refresh Service' is overdue by 21 days! Assigned to @dev_user.";
       } else if (userMsg.toLowerCase().includes('project')) {
@@ -33,78 +33,80 @@ export const FloatingAiAssistant: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="position-fixed bottom-0 end-0 p-4 z-3 d-flex flex-column align-items-end">
       {/* Expanded Floating Chat Container */}
       {isOpen && (
-        <div className="mb-4 w-96 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[480px]">
+        <div
+          className="card card-glass shadow-lg rounded-4 overflow-hidden animate-slide-up d-flex flex-column mb-3"
+          style={{ width: '380px', maxWidth: 'calc(100vw - 2rem)', height: '480px' }}
+        >
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-accent flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-                <Bot className="h-5 w-5" />
+          <div className="p-3 bg-gradient-dark-header text-white d-flex align-items-center justify-content-between border-bottom border-secondary border-opacity-25">
+            <div className="d-flex align-items-center gap-2">
+              <div className="rounded-3 bg-gradient-accent d-flex align-items-center justify-center text-white shadow-sm" style={{ width: '36px', height: '36px' }}>
+                <Bot style={{ width: '20px', height: '20px' }} />
               </div>
               <div>
-                <h4 className="font-bold text-sm leading-tight">Nexus AI Copilot</h4>
-                <div className="flex items-center gap-1.5 text-[11px] text-sky-400 font-medium">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <h4 className="h6 fw-bold mb-0 text-white leading-tight">ProjectPulse AI Copilot</h4>
+                <div className="d-flex align-items-center gap-1.5 small text-info" style={{ fontSize: '0.7rem' }}>
+                  <span className="bg-success rounded-circle d-inline-block" style={{ width: '6px', height: '6px' }}></span>
                   Active Intelligence Engine
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="d-flex align-items-center gap-1">
               <button
                 onClick={() => {
                   setIsOpen(false);
                   navigate('/ai-assistant');
                 }}
                 title="Expand to Fullscreen"
-                className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                className="btn btn-sm btn-link text-light p-1"
               >
-                <Maximize2 className="h-4 w-4" />
+                <Maximize2 style={{ width: '16px', height: '16px' }} />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                className="btn btn-sm btn-link text-light p-1"
               >
-                <X className="h-4 w-4" />
+                <X style={{ width: '16px', height: '16px' }} />
               </button>
             </div>
           </div>
 
           {/* Quick Suggestions Chips */}
-          <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto text-[11px]">
-            <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+          <div className="px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2 overflow-auto" style={{ fontSize: '0.75rem' }}>
+            <Lightbulb className="text-warning flex-shrink-0" style={{ width: '14px', height: '14px' }} />
             <button
-              onClick={() => {
-                setInput('Show overdue tasks');
-              }}
-              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-brand-300 hover:text-brand-600 transition-colors shrink-0"
+              onClick={() => setInput('Show overdue tasks')}
+              className="btn btn-xs btn-outline-secondary rounded-2 bg-white text-nowrap py-1 px-2 shadow-none"
+              style={{ fontSize: '0.72rem' }}
             >
               Overdue Tasks
             </button>
             <button
-              onClick={() => {
-                setInput('Summarize project velocity');
-              }}
-              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-brand-300 hover:text-brand-600 transition-colors shrink-0"
+              onClick={() => setInput('Summarize project velocity')}
+              className="btn btn-xs btn-outline-secondary rounded-2 bg-white text-nowrap py-1 px-2 shadow-none"
+              style={{ fontSize: '0.72rem' }}
             >
               Velocity Check
             </button>
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
+          <div className="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-2 bg-white">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`d-flex ${msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-2xl text-xs font-medium leading-relaxed ${
+                  className={`p-3 rounded-3 small fw-medium ${
                     msg.sender === 'user'
-                      ? 'bg-gradient-primary text-white rounded-br-none shadow-md shadow-indigo-500/10'
-                      : 'bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200/60'
+                      ? 'bg-gradient-primary text-white shadow-sm'
+                      : 'bg-light text-dark border'
                   }`}
+                  style={{ maxWidth: '85%', fontSize: '0.8rem', lineHeight: '1.4' }}
                 >
                   {msg.text}
                 </div>
@@ -113,19 +115,20 @@ export const FloatingAiAssistant: React.FC = () => {
           </div>
 
           {/* Input Footer */}
-          <form onSubmit={handleSend} className="p-3 bg-slate-50 border-t border-slate-200/80 flex items-center gap-2">
+          <form onSubmit={handleSend} className="p-2 bg-light border-top d-flex align-items-center gap-2">
             <input
               type="text"
               placeholder="Ask AI Copilot..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+              className="form-control form-control-sm bg-white border rounded-3 shadow-none text-sm"
             />
             <button
               type="submit"
-              className="p-2 bg-gradient-primary hover:opacity-95 text-white rounded-xl shadow-md transition-all shrink-0"
+              className="btn btn-sm btn-primary bg-gradient-primary border-0 rounded-3 px-3 shadow-sm d-flex align-items-center justify-center"
+              style={{ height: '31px' }}
             >
-              <Send className="h-3.5 w-3.5" />
+              <Send style={{ width: '14px', height: '14px' }} />
             </button>
           </form>
         </div>
@@ -134,12 +137,14 @@ export const FloatingAiAssistant: React.FC = () => {
       {/* Floating Trigger Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative group p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:scale-105 text-white rounded-full shadow-2xl shadow-indigo-500/30 border border-indigo-400/30 transition-all duration-300 flex items-center justify-center"
-        title="Nexus AI Assistant"
+        className="btn bg-gradient-dark-header text-white rounded-circle p-3 shadow-lg border border-secondary border-opacity-25 d-flex align-items-center justify-center position-relative"
+        style={{ width: '56px', height: '56px', transition: 'transform 0.2s' }}
+        title="ProjectPulse AI Assistant"
       >
-        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-ping"></span>
-        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-slate-900"></span>
-        <Sparkles className="h-6 w-6 text-sky-300 group-hover:rotate-12 transition-transform" />
+        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle">
+          <span className="visually-hidden">Online status</span>
+        </span>
+        <Sparkles className="text-info" style={{ width: '24px', height: '24px' }} />
       </button>
     </div>
   );

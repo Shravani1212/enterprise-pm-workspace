@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { User, Mail, Lock, X, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
 import { ApiResponse, UserResponse } from '../../types';
@@ -18,6 +18,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   
   const [email, setEmail] = useState(user?.email || '');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -51,107 +52,129 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
-        {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
-              <User className="h-5 w-5" />
+    <div
+      className="modal fade show d-block animate-fade-in"
+      tabIndex={-1}
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 1055 }}
+    >
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+          {/* Modal Header */}
+          <div className="modal-header bg-gradient-dark-header text-white border-0 px-4 py-3">
+            <div className="d-flex align-items-center gap-3">
+              <div className="rounded-3 bg-white bg-opacity-10 d-flex align-items-center justify-center text-info p-2" style={{ width: '40px', height: '40px' }}>
+                <User style={{ width: '20px', height: '20px' }} />
+              </div>
+              <div>
+                <h5 className="modal-title fw-bold text-white mb-0" style={{ fontSize: '1rem' }}>Account Settings</h5>
+                <p className="text-light text-opacity-75 small mb-0" style={{ fontSize: '0.75rem' }}>Update your profile details and security</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-base">Account Settings</h3>
-              <p className="text-xs text-slate-300">Update your profile details and security</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                First Name
-              </label>
-              <input
-                type="text"
-                required
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Last Name
-              </label>
-              <input
-                type="text"
-                required
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="h-4 w-4 absolute left-3.5 top-3 text-slate-400" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-              New Password <span className="text-slate-400 font-normal lowercase">(optional)</span>
-            </label>
-            <div className="relative">
-              <Lock className="h-4 w-4 absolute left-3.5 top-3 text-slate-400" />
-              <input
-                type="password"
-                placeholder="Leave blank to keep current"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="pt-3 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-5 py-2 text-sm font-semibold text-white bg-gradient-primary rounded-xl shadow-md shadow-indigo-500/20 hover:opacity-95 transition-all flex items-center gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              <span>{loading ? 'Saving...' : 'Save Profile'}</span>
-            </button>
+              className="btn-close btn-close-white shadow-none"
+              aria-label="Close"
+            ></button>
           </div>
-        </form>
+
+          {/* Modal Body */}
+          <form onSubmit={handleSubmit} className="modal-body p-4">
+            <div className="row g-3 mb-3">
+              <div className="col-6">
+                <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                />
+              </div>
+
+              <div className="col-6">
+                <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>
+                Email Address
+              </label>
+              <div className="input-group input-group-sm">
+                <span className="input-group-text bg-light text-muted">
+                  <Mail style={{ width: '16px', height: '16px' }} />
+                </span>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-control bg-light shadow-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>
+                New Password <span className="text-muted fw-normal lowercase">(optional)</span>
+              </label>
+              <div className="input-group input-group-sm">
+                <span className="input-group-text bg-light text-muted">
+                  <Lock style={{ width: '16px', height: '16px' }} />
+                </span>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Leave blank to keep current"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="form-control bg-light shadow-none text-sm border-end-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="btn btn-light border border-start-0 text-muted px-2 d-flex align-items-center justify-center"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff style={{ width: '14px', height: '14px' }} />
+                  ) : (
+                    <Eye style={{ width: '14px', height: '14px' }} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-sm btn-light fw-semibold text-secondary px-3 rounded-3"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 d-flex align-items-center gap-2 shadow-sm"
+              >
+                <CheckCircle2 style={{ width: '16px', height: '16px' }} />
+                <span>{loading ? 'Saving...' : 'Save Profile'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>,
     document.body

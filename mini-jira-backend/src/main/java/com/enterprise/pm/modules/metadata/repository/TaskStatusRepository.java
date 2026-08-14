@@ -15,5 +15,9 @@ public interface TaskStatusRepository extends JpaRepository<TaskStatus, Long> {
     @Query("SELECT ts FROM TaskStatus ts WHERE (ts.project.id = :projectId OR ts.project.id IS NULL) AND ts.active = true ORDER BY ts.displayOrder ASC")
     List<TaskStatus> findActiveByProjectIdOrGlobal(@Param("projectId") Long projectId);
 
-    Optional<TaskStatus> findByCode(String code);
+    Optional<TaskStatus> findFirstByCode(String code);
+
+    Optional<TaskStatus> findFirstByProjectIdAndCode(Long projectId, String code);
+
+    Optional<TaskStatus> findFirstByProjectIsNullAndCode(String code);
 }
