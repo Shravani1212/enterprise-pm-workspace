@@ -178,7 +178,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <div
           ref={containerRef}
           onScroll={checkScroll}
-          className="d-flex gap-4 pb-4 pt-1 w-100 kanban-board-scroll-container"
+          className="d-flex gap-4 pb-4 pt-1 w-100 kanban-board-scroll-container overflow-auto"
           style={{ height: 'calc(100vh - 17rem)', maxWidth: '100%' }}
         >
           {statuses.map((status) => {

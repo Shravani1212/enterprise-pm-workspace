@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
+import { sendProjectAssignmentEmail } from '../services/emailService';
 import { ApiResponse, ProjectResponse, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/alertUtils';
@@ -319,6 +320,20 @@ export const ProjectsOverviewPage: React.FC = () => {
           userId: uid,
           roleCode: assignRoleCode,
           leadId: leadId || null,
+        }).then(res => {
+          // If successful and role is Developer or Lead, trigger email
+          if (res.data?.success && res.data?.data) {
+            const addedMember = res.data.data;
+            if (addedMember.role.code === 'DEVELOPER' || addedMember.role.code === 'PROJECT_LEAD') {
+              sendProjectAssignmentEmail(
+                addedMember.user.email,
+                addedMember.user.firstName + ' ' + addedMember.user.lastName,
+                addedMember.project.name,
+                addedMember.role.code
+              );
+            }
+          }
+          return res;
         });
       });
 

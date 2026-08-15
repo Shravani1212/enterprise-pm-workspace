@@ -18,7 +18,7 @@ export const AppLayout: React.FC = () => {
       {/* Main Content Area with Header & Footer */}
       <div className="flex-grow-1 d-flex flex-column min-w-0">
         <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-grow-1 p-3 p-md-4 p-lg-5 overflow-auto" style={{ overflowX: 'hidden', maxWidth: '100%', width: '100%' }}>
+        <main className="flex-grow-1 p-3 p-md-4 p-lg-5 overflow-auto" style={{ maxWidth: '100%', width: '100%' }}>
           <Outlet />
         </main>
         <Footer />

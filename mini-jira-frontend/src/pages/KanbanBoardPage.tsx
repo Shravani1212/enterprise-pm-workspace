@@ -316,7 +316,7 @@ export const KanbanBoardPage: React.FC = () => {
   }
 
   return (
-    <div className="container-fluid p-0 d-flex flex-column gap-3 w-100" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+    <div className="container-fluid p-0 d-flex flex-column gap-3 w-100" style={{ maxWidth: '100%' }}>
       {/* View Header Bar with Dual-View Toggle */}
       <div className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
         <div>

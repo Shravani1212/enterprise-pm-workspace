@@ -21,6 +21,7 @@ import apiClient from '../../services/apiClient';
 import { formatRelativeTime } from '../../utils/dateUtils';
 import { useAuth } from '../../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../utils/alertUtils';
+import { sendSubtaskAssignmentEmail } from '../../services/emailService';
 
 interface TaskCardProps {
   task: Task;
@@ -182,6 +183,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
           if (!Array.isArray(oldData)) return oldData;
           return oldData.map((t: Task) => (t.id === updatedTask.id ? updatedTask : t));
         });
+        if (assigneeDevId) {
+          const assignedUser = members.find((m) => String(m.user?.id) === assigneeDevId)?.user;
+          if (assignedUser && assignedUser.email) {
+            sendSubtaskAssignmentEmail(
+              assignedUser.email,
+              assignedUser.username || assignedUser.firstName,
+              task.title,
+              title,
+              subtaskDueDate,
+              subtaskEstHours
+            );
+          }
+        }
+
         setNewSubtaskTitle('');
         setAssigneeDevId('');
         setSubtaskEstHours(0);

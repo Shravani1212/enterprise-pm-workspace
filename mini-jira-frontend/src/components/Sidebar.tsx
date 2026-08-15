@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       )}
 
       <aside 
-        className={`bg-white border-end d-flex flex-column justify-between vh-100 sticky-top z-3 sidebar-responsive ${isOpen ? 'show' : ''}`} 
+        className={`bg-white border-end d-flex flex-column justify-between vh-100 sticky-top sidebar-responsive ${isOpen ? 'show' : ''}`} 
         style={{ width: '260px', flexShrink: 0 }}
       >
       <div>

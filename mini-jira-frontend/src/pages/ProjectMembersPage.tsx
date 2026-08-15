@@ -9,6 +9,7 @@ import { getFriendlyError } from '../services/apiClient';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import GlobalDataTable, { DataTableColumn } from '../components/common/GlobalDataTable';
+import { sendProjectAssignmentEmail } from '../services/emailService';
 
 export const ProjectMembersPage: React.FC = () => {
   const { projectId } = useParams();
@@ -78,7 +79,22 @@ export const ProjectMembersPage: React.FC = () => {
         );
       });
 
-      await Promise.all(promises);
+      const results = await Promise.all(promises);
+
+      // Trigger Email Notifications for Developers and Leads
+      results.forEach((res, index) => {
+        if (res.data?.success && res.data?.data) {
+          const addedMember = res.data.data;
+          if (addedMember.role.code === 'DEVELOPER' || addedMember.role.code === 'PROJECT_LEAD') {
+            sendProjectAssignmentEmail(
+              addedMember.user.email,
+              addedMember.user.firstName + ' ' + addedMember.user.lastName,
+              addedMember.project.name,
+              addedMember.role.code
+            );
+          }
+        }
+      });
 
       showSuccessAlert('Members Added', `${selectedUserIds.length} members assigned to project successfully.`);
       setIsAddModalOpen(false);
