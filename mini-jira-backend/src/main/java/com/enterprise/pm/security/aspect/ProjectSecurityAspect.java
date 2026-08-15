@@ -32,12 +32,10 @@ public class ProjectSecurityAspect {
             throw new AccessDeniedException("User is not authenticated");
         }
 
-        // Workspace role bypass (ADMIN, PROJECT_MANAGER, DEVELOPER have active workspace access)
-        boolean isAuthorizedRole = principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") ||
-                               a.getAuthority().equals("ROLE_PROJECT_MANAGER") ||
-                               a.getAuthority().equals("ROLE_DEVELOPER"));
-        if (isAuthorizedRole) {
+        // Workspace role bypass (Only ADMIN has active workspace bypass access)
+        boolean isAdmin = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin) {
             return;
         }
 

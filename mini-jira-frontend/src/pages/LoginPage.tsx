@@ -3,14 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { ApiResponse, AuthResponse } from '../types';
-import { 
-  Layers, 
-  ArrowRight, 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  PlayCircle, 
+import {
+  Layers,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  PlayCircle,
   Moon,
   FolderKanban,
   CheckCircle2,
@@ -100,14 +100,7 @@ export const LoginPage: React.FC = () => {
 
   const handlePortalSwitch = (role: RolePortalType) => {
     setActivePortal(role);
-    if (role === 'ADMIN') {
-      setUsernameOrEmail('admin');
-    } else if (role === 'PROJECT_MANAGER') {
-      setUsernameOrEmail('pm_user');
-    } else {
-      setUsernameOrEmail('dev_user');
-    }
-    setPassword('Password123!');
+    setError(''); // Clear error on tab switch but do NOT overwrite credentials
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,318 +127,414 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="login-split-container min-vh-100 d-flex flex-column justify-content-between position-relative">
-      
-      {/* Background Floating Animated Gradient Mesh Orbs dynamically matching theme */}
-      <div 
-        className="position-absolute rounded-circle animate-float-slow opacity-30 pointer-events-none transition-all"
+    <div className="login-split-container min-vh-100 d-flex flex-column flex-lg-row position-relative" style={{ overflowX: 'hidden' }}>
+
+      {/* ── Left content area (Header, Hero contents, Stats card, Footer) ── */}
+      <div className="d-flex flex-column flex-grow-1 justify-content-between position-relative z-2" style={{ minWidth: 0 }}>
+        
+        {/* Background animated gradient blobs */}
+        {/* Top-left blob */}
+        <div
+          className="position-absolute rounded-circle pointer-events-none animate-float-slow"
+          style={{
+            width: '600px',
+            height: '600px',
+            background: `radial-gradient(circle, ${themeConfig.meshColor1} 0%, ${themeConfig.meshColor2} 50%, transparent 70%)`,
+            top: '-180px',
+            left: '-160px',
+            filter: 'blur(80px)',
+            opacity: 0.35,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Bottom-right blob */}
+        <div
+          className="position-absolute rounded-circle pointer-events-none animate-float-slow"
+          style={{
+            width: '500px',
+            height: '500px',
+            background: `radial-gradient(circle, ${themeConfig.meshColor2} 0%, ${themeConfig.meshColor1} 60%, transparent 80%)`,
+            bottom: '-120px',
+            right: '-100px',
+            filter: 'blur(80px)',
+            opacity: 0.25,
+            animationDelay: '3s',
+            zIndex: 0,
+          }}
+        />
+
+        {/* Top Header Navbar */}
+        <header className="px-4 px-lg-5 py-1 position-relative z-2">
+          <div className="container-fluid p-0 d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+              <img
+                src="/assets/logo.png"
+                alt="ProjectPulse Logo"
+                style={{ height: '90px', objectFit: 'contain' }}
+                className="hover-scale transition-all"
+              />
+              <div className="d-flex flex-column justify-content-center" style={{ gap: '1px' }}>
+                <span className="fw-bold lh-1 d-flex align-items-center" style={{ fontSize: '1.85rem', letterSpacing: '-0.5px' }}>
+                  <span className="text-dark">Project&nbsp;</span>
+                  <span className="text-gradient-hero">Pulse</span>
+
+                  <svg
+                    viewBox="0 0 160 50"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ width: '120px', height: '36px', marginLeft: '10px', overflow: 'visible' }}
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.6" />
+                        <stop offset="40%" stopColor="#7c3aed" />
+                        <stop offset="70%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#db2777" stopOpacity="0.7" />
+                      </linearGradient>
+                      <filter id="ecgGlow" x="-20%" y="-80%" width="140%" height="260%">
+                        <feGaussianBlur stdDeviation="2.5" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <path
+                      d="M 0,25 L 40,25 L 50,20 L 55,25 L 65,5 L 72,42 L 80,25 L 95,30 L 105,25 L 160,25"
+                      fill="none"
+                      stroke="url(#pulseGrad)"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      filter="url(#ecgGlow)"
+                    />
+                  </svg>
+                </span>
+                <span className="text-gradient-hero fw-bold" style={{ fontSize: '1.0rem', letterSpacing: '0.04em', marginTop: '3px' }}>
+                  {themeConfig.tagline}
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Section */}
+        <main className="container-fluid px-4 px-lg-5 py-2 position-relative z-2 flex-grow-1">
+          <div className="row g-3 w-100 mx-0">
+            <div className="col-12 d-flex flex-column justify-content-start pe-lg-3 animate-slide-up">
+              
+              {/* Promo Video */}
+              <div
+                className="rounded-4 overflow-hidden position-relative mb-3"
+                style={{
+                  minHeight: '200px',
+                  boxShadow: '0 20px 50px -10px rgba(79,70,229,0.45)',
+                  border: '1px solid rgba(99,102,241,0.25)',
+                }}
+              >
+                <video
+                  src="/assets/promo.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  style={{ width: '100%', minHeight: '200px', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLVideoElement).style.display = 'none';
+                    const fb = e.currentTarget.nextElementSibling as HTMLElement | null;
+                    if (fb) fb.style.display = 'flex';
+                  }}
+                />
+                <div
+                  style={{
+                    display: 'none',
+                    minHeight: '200px',
+                    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #6b21a8 100%)',
+                  }}
+                  className="align-items-center justify-content-center flex-column gap-2 text-white"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                    style={{ width: '44px', height: '44px', opacity: 0.45 }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+                  </svg>
+                  <span className="small fw-semibold" style={{ opacity: 0.55 }}>Place assets/promo.mp4 in /public/assets</span>
+                </div>
+              </div>
+
+              {/* Badge + Description + Accent Button */}
+              <div className="mb-2">
+                <div className={`badge rounded-pill px-3 py-2 fw-semibold mb-2 d-inline-flex align-items-center gap-2 shadow-xs border ${themeConfig.badgeBg}`}>
+                  <span className="badge-glowing-dot"></span>
+                  <span>{themeConfig.badgeText}</span>
+                </div>
+
+                <p className="mb-3 fw-semibold" style={{ maxWidth: '540px', fontSize: '1.02rem', lineHeight: '1.55', color: '#4b5563' }}>
+                  {themeConfig.accentText}
+                </p>
+
+                <div className="d-flex align-items-center gap-3 mb-2 d-lg-none">
+                  <button
+                    onClick={handleSubmit}
+                    className="btn border-0 btn-lg rounded-3 px-4 py-3 fw-semibold text-sm text-white shadow-md d-flex align-items-center gap-2 transition-all hover-scale"
+                    style={{ background: themeConfig.btnGradient }}
+                  >
+                    <span>Sign In as {activePortal}</span>
+                    <ArrowRight style={{ width: '18px', height: '18px' }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats Preview Card */}
+              <div
+                className="card rounded-4 border-0 p-4 overflow-hidden position-relative mt-3"
+                style={{
+                  background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #6b21a8 100%)',
+                  boxShadow: '0 20px 50px -10px rgba(79,70,229,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset',
+                }}
+              >
+                <div className="d-flex align-items-center justify-content-between mb-4">
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="rounded-circle bg-danger" style={{ width: '10px', height: '10px', display: 'inline-block' }}></span>
+                    <span className="rounded-circle bg-warning" style={{ width: '10px', height: '10px', display: 'inline-block' }}></span>
+                    <span className="rounded-circle bg-success" style={{ width: '10px', height: '10px', display: 'inline-block' }}></span>
+                  </div>
+                  <div className="badge rounded-pill px-3 d-flex align-items-center gap-2 border border-white border-opacity-25 bg-white bg-opacity-10 text-white" style={{ fontSize: '0.75rem' }}>
+                    <themeConfig.heroIcon style={{ width: '15px', height: '15px' }} />
+                    <span className="fw-semibold">{themeConfig.heroGraphicBadge}</span>
+                  </div>
+                </div>
+                <div className="row g-3 align-items-center">
+                  <div className="col-4">
+                    <div className="p-3 rounded-3 d-flex align-items-center gap-3 card-hover-lift" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                      <div className="rounded-3 p-2 text-white" style={{ background: 'rgba(99,102,241,0.8)' }}>
+                        <FolderKanban style={{ width: '18px', height: '18px' }} />
+                      </div>
+                      <div>
+                        <div className="fw-bold small mb-0 text-white">Projects</div>
+                        <span className="fw-semibold" style={{ fontSize: '0.68rem', color: '#86efac' }}>Active Workspace</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="p-3 rounded-3 d-flex align-items-center gap-3 card-hover-lift" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                      <div className="rounded-3 p-2 text-dark" style={{ background: 'rgba(251,191,36,0.9)' }}>
+                        <Clock style={{ width: '18px', height: '18px' }} />
+                      </div>
+                      <div>
+                        <div className="fw-bold small mb-0 text-white">Sprints</div>
+                        <span className="fw-semibold" style={{ fontSize: '0.68rem', color: '#fde68a' }}>In Progress</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="p-3 rounded-3 d-flex align-items-center gap-3 card-hover-lift" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                      <div className="rounded-3 p-2 text-white" style={{ background: 'rgba(34,197,94,0.85)' }}>
+                        <ShieldCheck style={{ width: '18px', height: '18px' }} />
+                      </div>
+                      <div>
+                        <div className="fw-bold small mb-0 text-white">RBAC</div>
+                        <span className="fw-semibold" style={{ fontSize: '0.68rem', color: '#6ee7b7' }}>Role Mapped</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="px-4 px-lg-5 py-3 position-relative z-2 text-center text-muted small">
+          <div className="container-fluid p-0 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2" style={{ fontSize: '0.78rem' }}>
+            <div>© 2026 ProjectPulse Platform. All rights reserved.</div>
+            <div className="d-flex align-items-center gap-3">
+              <a href="#privacy" onClick={(e) => e.preventDefault()} className="text-muted text-decoration-none hover-text-primary">Privacy Policy</a>
+              <span>•</span>
+              <a href="#terms" onClick={(e) => e.preventDefault()} className="text-muted text-decoration-none hover-text-primary">Terms of Service</a>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      {/* ── Right-side Login Panel (Aligned beside project heading, theme toggle at bottom) ── */}
+      <div
+        className="d-flex flex-column justify-content-between p-4"
         style={{
-          width: '650px',
-          height: '650px',
-          background: `radial-gradient(circle, ${themeConfig.meshColor1} 0%, ${themeConfig.meshColor2} 50%, rgba(255,255,255,0) 70%)`,
-          top: '-150px',
-          left: '-130px',
-          filter: 'blur(70px)',
-          zIndex: 0
+          width: '100%',
+          maxWidth: '460px',
+          minHeight: '100vh',
+          background: 'rgba(255,255,255,0.7)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderLeft: '1px solid rgba(99,102,241,0.15)',
+          boxShadow: '-8px 0 40px -10px rgba(99,102,241,0.18)',
         }}
-      />
-
-      {/* Top Header Navbar */}
-      <header className="px-4 px-lg-5 py-3 position-relative z-2">
-        <div className="container-fluid p-0 d-flex align-items-center justify-content-between">
-          
-          {/* Brand Logo */}
-          <div className="d-flex align-items-center gap-2.5 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <div 
-              className="rounded-3 d-flex align-items-center justify-center text-white shadow-md p-2 hover-scale transition-all" 
-              style={{ width: '42px', height: '42px', background: themeConfig.btnGradient }}
-            >
-              <Layers style={{ width: '24px', height: '24px' }} />
-            </div>
-            <span className="h4 fw-bold mb-0 text-dark tracking-tight">ProjectPulse</span>
-          </div>
-
-
-
-          {/* Theme Toggle Button */}
-          <div className="d-flex align-items-center gap-3">
-            <button
-              onClick={toggleTheme}
-              className="btn btn-sm btn-light rounded-3 p-2 text-muted border-0 d-flex align-items-center justify-center shadow-xs hover-scale"
-              title="Toggle Theme"
-            >
-              <Moon style={{ width: '18px', height: '18px' }} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Split Content Section */}
-      <main className="container-fluid px-4 px-lg-5 py-4 position-relative z-2 flex-grow-1 d-flex align-items-center">
-        <div className="row g-5 align-items-center w-100 mx-0">
-          
-          {/* Left Hero Section */}
-          <div className="col-12 col-lg-7 d-flex flex-column justify-content-center pe-lg-5 animate-slide-up">
+      >
+        {/* Login Card */}
+        <div className="w-100 animate-slide-up mt-2" style={{ animationDelay: '0.15s' }}>
+          <div className="card glass-login-card border-0 rounded-4 p-4 w-100 shadow-2xl">
+            
+            {/* Role Selection Tabs */}
             <div className="mb-4">
-              <div className={`badge rounded-pill px-3 py-2 fw-semibold mb-3 d-inline-flex align-items-center gap-2 shadow-xs border ${themeConfig.badgeBg}`}>
-                <span className="badge-glowing-dot"></span>
-                <span>{themeConfig.badgeText}</span>
+              <div className="text-uppercase text-muted fw-bold mb-2 text-center" style={{ fontSize: '0.68rem', letterSpacing: '0.06em' }}>
+                Select Login Role
               </div>
-
-              <h1 className="display-4 fw-bold text-dark lh-sm mb-3">
-                {themeConfig.portalName} <br />
-                <span className="text-gradient-hero">{themeConfig.tagline}</span>
-              </h1>
-              <p className="lead text-muted mb-4" style={{ maxWidth: '540px', fontSize: '1.08rem', lineHeight: '1.6' }}>
-                {themeConfig.accentText}
-              </p>
-
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <button 
-                  onClick={handleSubmit}
-                  className="btn border-0 btn-lg rounded-3 px-4 py-3 fw-semibold text-sm text-white shadow-md d-flex align-items-center gap-2 transition-all hover-scale"
-                  style={{ background: themeConfig.btnGradient }}
-                >
-                  <span>Sign In as {activePortal}</span>
-                  <ArrowRight style={{ width: '18px', height: '18px' }} />
-                </button>
-              </div>
-            </div>
-
-            {/* Role Dynamic Visual Graphic Canvas with Vector Icon Badges */}
-            <div className="card hero-preview-card rounded-4 border-0 p-4 overflow-hidden position-relative" style={{ minHeight: '220px' }}>
-              <div className="d-flex align-items-center justify-content-between mb-4">
-                <div className="d-flex align-items-center gap-2">
-                  <span className="rounded-circle bg-primary p-1"></span>
-                  <span className="rounded-circle bg-success p-1"></span>
-                  <span className="rounded-circle bg-warning p-1"></span>
-                </div>
-                <div className={`badge rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 border ${themeConfig.badgeBg}`} style={{ fontSize: '0.75rem' }}>
-                  <themeConfig.heroIcon style={{ width: '15px', height: '15px' }} />
-                  <span className="fw-semibold">{themeConfig.heroGraphicBadge}</span>
-                </div>
-              </div>
-
-              {/* Stat Pill Chips */}
-              <div className="row g-3 align-items-center mb-3">
-                <div className="col-4">
-                  <div className="p-3 rounded-3 bg-white border d-flex align-items-center gap-3 shadow-xs card-hover-lift">
-                    <div className="rounded-3 p-2.5 text-white" style={{ background: themeConfig.btnGradient }}>
-                      <FolderKanban style={{ width: '20px', height: '20px' }} />
-                    </div>
-                    <div>
-                      <div className="fw-bold text-dark small mb-0">Projects</div>
-                      <span className="text-success fw-semibold" style={{ fontSize: '0.7rem' }}>Active Workspace</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-4">
-                  <div className="p-3 rounded-3 bg-white border d-flex align-items-center gap-3 shadow-xs card-hover-lift">
-                    <div className="rounded-3 bg-warning text-dark p-2.5">
-                      <Clock style={{ width: '20px', height: '20px' }} />
-                    </div>
-                    <div>
-                      <div className="fw-bold text-dark small mb-0">Sprints</div>
-                      <span className="text-warning fw-semibold" style={{ fontSize: '0.7rem' }}>In Progress</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-4">
-                  <div className="p-3 rounded-3 bg-white border d-flex align-items-center gap-3 shadow-xs card-hover-lift">
-                    <div className="rounded-3 bg-success text-white p-2.5">
-                      <ShieldCheck style={{ width: '20px', height: '20px' }} />
-                    </div>
-                    <div>
-                      <div className="fw-bold text-dark small mb-0">RBAC Services</div>
-                      <span className="text-info fw-semibold" style={{ fontSize: '0.7rem' }}>Role Mapped</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Clean Role-Specific Login Card */}
-          <div className="col-12 col-lg-5 d-flex justify-content-center justify-content-lg-end animate-slide-up">
-            <div className="card glass-login-card border-0 rounded-4 p-4 p-sm-5 w-100 shadow-2xl" style={{ maxWidth: '440px' }}>
-              
-              {/* Role Selection Tabs directly on top of Login Card */}
-              <div className="mb-4">
-                <div className="text-uppercase text-muted fw-bold mb-2 text-center" style={{ fontSize: '0.68rem', letterSpacing: '0.06em' }}>
-                  Select Login Role
-                </div>
-                <div className="d-flex align-items-center gap-1 p-1 bg-white bg-opacity-75 rounded-3 border shadow-xs">
-                  <button
-                    type="button"
-                    onClick={() => handlePortalSwitch('DEVELOPER')}
-                    className={`btn btn-sm flex-fill fw-bold rounded-2 py-2 text-xs transition-all d-flex align-items-center justify-content-center gap-1.5 ${
-                      activePortal === 'DEVELOPER'
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'text-muted hover-bg-light hover-text-dark'
-                    }`}
-                  >
-                    <Code2 style={{ width: '14px', height: '14px' }} />
-                    <span>Developer</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePortalSwitch('ADMIN')}
-                    className={`btn btn-sm flex-fill fw-bold rounded-2 py-2 text-xs transition-all d-flex align-items-center justify-content-center gap-1.5 ${
-                      activePortal === 'ADMIN'
-                        ? 'text-white shadow-xs'
-                        : 'text-muted hover-bg-light hover-text-dark'
-                    }`}
-                    style={activePortal === 'ADMIN' ? { backgroundColor: '#7c3aed' } : {}}
-                  >
-                    <Shield style={{ width: '14px', height: '14px' }} />
-                    <span>Admin</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePortalSwitch('PROJECT_MANAGER')}
-                    className={`btn btn-sm flex-fill fw-bold rounded-2 py-2 text-xs transition-all d-flex align-items-center justify-content-center gap-1.5 ${
-                      activePortal === 'PROJECT_MANAGER'
-                        ? 'bg-success text-white shadow-xs'
-                        : 'text-muted hover-bg-light hover-text-dark'
-                    }`}
-                  >
-                    <BarChart3 style={{ width: '14px', height: '14px' }} />
-                    <span>Project Mgr</span>
-                  </button>
-                </div>
-              </div>
-              
-              {/* Card Header */}
-              <div className="text-center mb-4">
-                <div 
-                  className="rounded-circle text-white d-inline-flex align-items-center justify-center p-3 shadow-md mb-3 hover-scale transition-all" 
-                  style={{ width: '58px', height: '58px', background: themeConfig.btnGradient }}
-                >
-                  <themeConfig.heroIcon style={{ width: '28px', height: '28px' }} />
-                </div>
-                <h2 className="h4 fw-bold text-dark mb-1">{themeConfig.portalName}</h2>
-                <p className="text-muted small mb-0">Sign in to access your role dashboard</p>
-              </div>
-
-              {/* Error Alert */}
-              {error && (
-                <div className="alert alert-danger rounded-3 p-3 small mb-4 fw-semibold border-danger border-opacity-25 animate-shake" role="alert">
-                  {error}
-                </div>
-              )}
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="d-flex flex-column gap-3.5">
-                
-                {/* Username Input */}
-                <div>
-                  <label className="form-label text-uppercase fw-bold text-muted small mb-1.5" style={{ fontSize: '0.7rem' }}>
-                    Email Address or Username
-                  </label>
-                  <div className="input-group glass-input-container">
-                    <span className="input-group-text bg-transparent border-0 text-muted px-3">
-                      <Mail style={{ width: '18px', height: '18px' }} />
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      value={usernameOrEmail}
-                      onChange={(e) => setUsernameOrEmail(e.target.value)}
-                      className="form-control form-control-lg bg-transparent border-0 shadow-none text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Input */}
-                <div>
-                  <div className="d-flex align-items-center justify-content-between mb-1.5">
-                    <label className="form-label text-uppercase fw-bold text-muted small mb-0" style={{ fontSize: '0.7rem' }}>
-                      Password
-                    </label>
-                    <a 
-                      href="#forgot" 
-                      onClick={(e) => { e.preventDefault(); showSuccessAlert('Password Reset', 'Password reset instructions sent.'); }}
-                      className="text-primary text-decoration-none fw-semibold small"
-                      style={{ fontSize: '0.75rem' }}
-                    >
-                      Forgot password?
-                    </a>
-                  </div>
-                  <div className="input-group glass-input-container">
-                    <span className="input-group-text bg-transparent border-0 text-muted px-3">
-                      <Lock style={{ width: '18px', height: '18px' }} />
-                    </span>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="form-control form-control-lg bg-transparent border-0 shadow-none text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="btn bg-transparent border-0 text-muted px-3 d-flex align-items-center justify-center shadow-none"
-                      title={showPassword ? 'Password visible' : 'Password hidden'}
-                    >
-                      {showPassword ? (
-                        <Eye style={{ width: '18px', height: '18px' }} />
-                      ) : (
-                        <EyeOff style={{ width: '18px', height: '18px' }} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Remember Me */}
-                <div className="d-flex align-items-center justify-content-between py-1">
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="rememberMe"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="form-check-input shadow-none cursor-pointer"
-                    />
-                    <label htmlFor="rememberMe" className="form-check-label text-muted small cursor-pointer">
-                      Remember me for 30 days
-                    </label>
-                  </div>
-                </div>
-
-                {/* Submit Button matching role theme */}
+              <div className="d-flex align-items-center gap-1 p-1 bg-white bg-opacity-75 rounded-3 border shadow-xs">
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn border-0 btn-lg rounded-3 fw-semibold text-sm shadow-md d-flex align-items-center justify-center gap-2 mt-1 py-3 text-white transition-all hover-scale"
-                  style={{ background: themeConfig.btnGradient }}
+                  type="button"
+                  onClick={() => handlePortalSwitch('DEVELOPER')}
+                  className={`btn btn-sm flex-fill fw-bold rounded-2 py-2 text-xs transition-all d-flex align-items-center justify-content-center gap-1.5 ${activePortal === 'DEVELOPER'
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-muted hover-bg-light hover-text-dark'
+                    }`}
                 >
-                  <span>{loading ? 'Signing in...' : `Sign In (${activePortal})`}</span>
-                  <ArrowRight style={{ width: '18px', height: '18px' }} />
+                  <Code2 style={{ width: '14px', height: '14px' }} />
+                  <span>Developer</span>
                 </button>
 
-              </form>
+                <button
+                  type="button"
+                  onClick={() => handlePortalSwitch('ADMIN')}
+                  className={`btn btn-sm flex-fill fw-bold rounded-2 py-2 text-xs transition-all d-flex align-items-center justify-content-center gap-1.5 ${activePortal === 'ADMIN'
+                    ? 'text-white shadow-xs'
+                    : 'text-muted hover-bg-light hover-text-dark'
+                    }`}
+                  style={activePortal === 'ADMIN' ? { backgroundColor: '#7c3aed' } : {}}
+                >
+                  <Shield style={{ width: '14px', height: '14px' }} />
+                  <span>Admin</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePortalSwitch('PROJECT_MANAGER')}
+                  className={`btn btn-sm flex-fill fw-bold rounded-2 py-2 text-xs transition-all d-flex align-items-center justify-content-center gap-1.5 ${activePortal === 'PROJECT_MANAGER'
+                    ? 'bg-success text-white shadow-xs'
+                    : 'text-muted hover-bg-light hover-text-dark'
+                    }`}
+                >
+                  <BarChart3 style={{ width: '14px', height: '14px' }} />
+                  <span>Project Mgr</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-        </div>
-      </main>
+            {/* Card Header */}
+            <div className="text-center mb-4">
+              <div
+                className="rounded-circle text-white d-inline-flex align-items-center justify-center p-3 shadow-md mb-3 hover-scale transition-all"
+                style={{ width: '58px', height: '50px', background: themeConfig.btnGradient }}
+              >
+                <themeConfig.heroIcon style={{ width: '28px', height: '28px' }} />
+              </div>
+              <h2 className="h5 fw-bold text-dark mb-1">{themeConfig.portalName}</h2>
+            </div>
 
-      {/* Footer */}
-      <footer className="px-4 px-lg-5 py-3 position-relative z-2 text-center text-muted small">
-        <div className="container-fluid p-0 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2" style={{ fontSize: '0.78rem' }}>
-          <div>© 2026 ProjectPulse Platform. All rights reserved.</div>
-          <div className="d-flex align-items-center gap-3">
-            <a href="#privacy" onClick={(e) => e.preventDefault()} className="text-muted text-decoration-none hover-text-primary">Privacy Policy</a>
-            <span>•</span>
-            <a href="#terms" onClick={(e) => e.preventDefault()} className="text-muted text-decoration-none hover-text-primary">Terms of Service</a>
+            {/* Error Alert */}
+            {error && (
+              <div className="alert alert-danger rounded-3 p-3 small mb-4 fw-semibold border-danger border-opacity-25 animate-shake" role="alert">
+                {error}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
+              <div>
+                <label className="form-label text-uppercase fw-bold text-muted small mb-1" style={{ fontSize: '0.7rem' }}>
+                  Email Address or Username
+                </label>
+                <div className="input-group glass-input-container">
+                  <span className="input-group-text bg-transparent border-0 text-muted px-3">
+                    <Mail style={{ width: '18px', height: '18px' }} />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                    className="form-control form-control-lg bg-transparent border-0 shadow-none text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="d-flex align-items-center justify-content-between mb-1">
+                  <label className="form-label text-uppercase fw-bold text-muted small mb-0" style={{ fontSize: '0.7rem' }}>
+                    Password
+                  </label>
+                  <a
+                    href="#forgot"
+                    onClick={(e) => { e.preventDefault(); showSuccessAlert('Password Reset', 'Password reset instructions sent.'); }}
+                    className="text-primary text-decoration-none fw-semibold small"
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+                <div className="input-group glass-input-container">
+                  <span className="input-group-text bg-transparent border-0 text-muted px-3">
+                    <Lock style={{ width: '18px', height: '18px' }} />
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="form-control form-control-lg bg-transparent border-0 shadow-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="btn bg-transparent border-0 text-muted px-3 d-flex align-items-center justify-center shadow-none"
+                  >
+                    {showPassword ? <Eye style={{ width: '18px', height: '18px' }} /> : <EyeOff style={{ width: '18px', height: '18px' }} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="form-check-input shadow-none cursor-pointer"
+                />
+                <label htmlFor="rememberMe" className="form-check-label text-muted small cursor-pointer">
+                  Remember me for 30 days
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn border-0 btn-lg rounded-3 fw-semibold text-sm shadow-md d-flex align-items-center justify-center gap-2 py-3 text-white transition-all hover-scale"
+                style={{ background: themeConfig.btnGradient }}
+              >
+                <span>{loading ? 'Signing in...' : `Sign In (${activePortal})`}</span>
+                <ArrowRight style={{ width: '18px', height: '18px' }} />
+              </button>
+            </form>
           </div>
         </div>
-      </footer>
+
+        {/* Theme Toggle - pinned to the bottom of the right panel */}
+        <div className="w-100 pt-3 border-top d-flex align-items-center justify-content-end" style={{ borderColor: 'rgba(99,102,241,0.12)' }}>
+          <button
+            onClick={toggleTheme}
+            className="btn btn-sm rounded-3 p-2 d-flex align-items-center gap-2 border-0 text-muted hover-scale transition-all"
+            style={{ background: 'rgba(99,102,241,0.08)', fontSize: '0.78rem' }}
+            title="Toggle Theme"
+          >
+            <Moon style={{ width: '16px', height: '16px' }} />
+            <span className="fw-semibold">Toggle Theme</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };

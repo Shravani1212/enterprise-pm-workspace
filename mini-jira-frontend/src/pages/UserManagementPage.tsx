@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Shield, Mail, CheckCircle2, Lock, KeyRound, Sparkles } from 'lucide-react';
+import { Users, UserPlus, Shield, Mail, CheckCircle2, Lock, KeyRound, Sparkles, Eye, EyeOff, FolderKanban } from 'lucide-react';
 import apiClient from '../services/apiClient';
-import { ApiResponse, User } from '../types';
+import { ApiResponse, User, ProjectResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert } from '../utils/alertUtils';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import GlobalDataTable, { DataTableColumn } from '../components/common/GlobalDataTable';
 
 export const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -17,7 +19,10 @@ export const UserManagementPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('Password123!');
+  const [showPassword, setShowPassword] = useState(false);
   const [roleCode, setRoleCode] = useState('DEVELOPER');
+  const [assignProjectId, setAssignProjectId] = useState('');
+  const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchUsers = async () => {
@@ -34,8 +39,16 @@ export const UserManagementPage: React.FC = () => {
     }
   };
 
+  const fetchProjects = async () => {
+    try {
+      const res = await apiClient.get<ApiResponse<ProjectResponse[]>>('/projects');
+      if (res.data.success && res.data.data) setProjects(res.data.data);
+    } catch { }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchProjects();
   }, []);
 
   const handleCreateUserSubmit = async (e: React.FormEvent) => {
@@ -51,14 +64,38 @@ export const UserManagementPage: React.FC = () => {
         roleCodes: [roleCode],
       });
 
-      if (res.data.success) {
-        showSuccessAlert('User Created', `User @${username} registered successfully as ${roleCode}.`);
+      if (res.data.success && res.data.data) {
+        const newUser = res.data.data;
+
+        // If a role that needs project assignment is selected AND a project was chosen,
+        // call the members API to add them to that project right away.
+        const rolesWithProject = ['PROJECT_MANAGER', 'PROJECT_LEAD', 'DEVELOPER'];
+        if (rolesWithProject.includes(roleCode) && assignProjectId) {
+          try {
+            await apiClient.post(`/projects/${assignProjectId}/members`, {
+              userId: newUser.id,
+              roleCode: roleCode,
+            });
+            showSuccessAlert(
+              'User Created & Assigned',
+              `@${username} created as ${roleCode.replace('_', ' ')} and assigned to the selected project.`
+            );
+          } catch {
+            showSuccessAlert(
+              'User Created',
+              `@${username} created. Project assignment may need to be set manually.`
+            );
+          }
+        } else {
+          showSuccessAlert('User Created', `User @${username} registered successfully as ${roleCode}.`);
+        }
         setIsModalOpen(false);
         setUsername('');
         setEmail('');
         setFirstName('');
         setLastName('');
         setPassword('Password123!');
+        setAssignProjectId('');
         fetchUsers();
       }
     } catch (err: any) {
@@ -78,101 +115,100 @@ export const UserManagementPage: React.FC = () => {
     return 'bg-primary bg-opacity-10 text-primary border-primary border-opacity-25';
   };
 
+  // ── Column definitions for GlobalDataTable ──────────────────────────────────
+  const userColumns: DataTableColumn<User>[] = [
+    {
+      key: 'firstName',
+      label: 'User',
+      render: (u) => (
+        <div className="d-flex align-items-center gap-3">
+          <div
+            className="rounded-circle bg-gradient-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-xs flex-shrink-0"
+            style={{ width: '38px', height: '38px', fontSize: '0.95rem' }}
+          >
+            {u.firstName?.[0] || 'U'}
+          </div>
+          <div>
+            <div className="fw-bold text-dark mb-0">{u.firstName} {u.lastName}</div>
+            <div className="text-muted" style={{ fontSize: '0.75rem' }}>@{u.username}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'username',
+      label: 'Username',
+      render: (u) => <span className="font-monospace text-dark text-sm">@{u.username}</span>,
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (u) => <span className="text-muted small">{u.email}</span>,
+    },
+    {
+      key: 'roles',
+      label: 'System Roles',
+      render: (u) => (
+        <div className="d-flex gap-1 flex-wrap">
+          {u.roles?.map((r) => (
+            <span
+              key={r}
+              className={`badge border rounded-pill px-2 py-1 text-uppercase fw-semibold ${getRoleBadgeStyle(u.roles)}`}
+              style={{ fontSize: '0.65rem' }}
+            >
+              {r}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      // This field doesn't exist on User, but render overrides it
+      render: () => (
+        <span className="badge badge-subtle-success rounded-pill px-2 py-1 small">Active</span>
+      ),
+      noExport: false,
+    },
+  ];
+
+  // "Create New User" button – passed as the actions slot to GlobalDataTable
+  const createUserBtn = (
+    <button
+      onClick={() => setIsModalOpen(true)}
+      className="btn btn-primary bg-gradient-primary border-0 rounded-3 d-flex align-items-center gap-2 px-4 py-2 fw-semibold shadow-sm"
+      style={{ fontSize: '0.85rem' }}
+    >
+      <UserPlus style={{ width: '16px', height: '16px' }} />
+      <span>Create New User</span>
+    </button>
+  );
+
   return (
-    <div className="container-fluid p-0 animate-fade-in" style={{ maxWidth: '1100px' }}>
+    <div className="container-fluid p-0 animate-fade-in" style={{ maxWidth: '1200px' }}>
       {/* Top Header Card */}
       <div className="card card-glass p-4 rounded-4 border-0 shadow-sm mb-4">
-        <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-          <div>
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <h1 className="h4 fw-bold mb-0 text-dark">User Management & Global Roles</h1>
-              <span className="badge badge-subtle-primary rounded-pill px-3 py-1" style={{ fontSize: '0.75rem' }}>
-                {users.length} Registered Accounts
-              </span>
-            </div>
-            <p className="small text-muted mb-0">
-              Admin control panel to provision accounts, specify global system roles, and grant permissions.
-            </p>
-          </div>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn btn-primary bg-gradient-primary border-0 rounded-3 d-flex align-items-center gap-2 px-4 py-2 fw-semibold shadow-sm text-sm"
-          >
-            <UserPlus style={{ width: '18px', height: '18px' }} />
-            <span>Create New User</span>
-          </button>
+        <div className="d-flex align-items-center gap-2 mb-1">
+          <h1 className="h4 fw-bold mb-0 text-dark">User Management &amp; Global Roles</h1>
         </div>
+        <p className="small text-muted mb-0">
+          Admin control panel to provision accounts, specify global system roles, and grant permissions.
+        </p>
       </div>
 
-      {/* Users Table */}
+      {/* Users DataTable */}
       {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading users...</span>
-          </div>
-        </div>
+        <LoadingSpinner message="Loading workspace users..." />
       ) : (
-        <div className="card card-glass border-0 shadow-sm rounded-4 overflow-hidden">
-          <div className="table-responsive">
-            <table className="table align-middle mb-0">
-              <thead className="table-light text-uppercase fw-bold text-muted" style={{ fontSize: '0.72rem' }}>
-                <tr>
-                  <th className="ps-4">User</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>System Roles</th>
-                  <th>Status</th>
-                  <th className="pe-4 text-end">User ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td className="ps-4 py-3">
-                      <div className="d-flex align-items-center gap-3">
-                        <div
-                          className="rounded-circle bg-gradient-primary text-white fw-bold d-flex align-items-center justify-center shadow-xs"
-                          style={{ width: '38px', height: '38px', fontSize: '0.95rem' }}
-                        >
-                          {u.firstName?.[0] || 'U'}
-                        </div>
-                        <div>
-                          <div className="fw-bold text-dark mb-0">
-                            {u.firstName} {u.lastName}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="font-monospace text-dark text-sm">@{u.username}</span>
-                    </td>
-                    <td className="text-muted small">{u.email}</td>
-                    <td>
-                      <div className="d-flex gap-1.5 flex-wrap">
-                        {u.roles?.map((r) => (
-                          <span
-                            key={r}
-                            className={`badge border rounded-pill px-2.5 py-1 text-uppercase fw-semibold ${getRoleBadgeStyle(u.roles)}`}
-                            style={{ fontSize: '0.65rem' }}
-                          >
-                            {r}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge badge-subtle-success rounded-pill px-2.5 py-1 small">
-                        Active
-                      </span>
-                    </td>
-                    <td className="pe-4 text-end text-muted font-monospace small">#{u.id}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <GlobalDataTable<User>
+          id="users-data-table"
+          title="System Users"
+          columns={userColumns}
+          data={users}
+          exportFileName="system_users"
+          actions={createUserBtn}
+        />
       )}
 
       {/* Admin User Creation Modal */}
@@ -237,28 +273,74 @@ export const UserManagementPage: React.FC = () => {
 
                 <div className="mb-3">
                   <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Initial Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
-                  />
+                  <div className="input-group input-group-sm">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="form-control bg-light rounded-start-3 shadow-none text-sm border-end-0"
+                      placeholder="Min 8 characters"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="btn btn-light border border-start-0 rounded-end-3 px-2 text-muted"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showPassword
+                        ? <Eye style={{ width: '15px', height: '15px' }} />
+                        : <EyeOff style={{ width: '15px', height: '15px' }} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mb-4">
                   <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Global Role Specification</label>
                   <select
                     value={roleCode}
-                    onChange={(e) => setRoleCode(e.target.value)}
+                    onChange={(e) => { setRoleCode(e.target.value); setAssignProjectId(''); }}
                     className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm"
                   >
-                    <option value="DEVELOPER">Developer (Sprint & Task execution)</option>
-                    <option value="PROJECT_LEAD">Project Lead (Task creation & developer assignment)</option>
-                    <option value="PROJECT_MANAGER">Project Manager (Sprint creation & project control)</option>
+                    <option value="DEVELOPER">Developer (Sprint &amp; Task execution)</option>
+                    <option value="PROJECT_LEAD">Project Lead (Task creation &amp; developer assignment)</option>
+                    <option value="PROJECT_MANAGER">Project Manager (Sprint creation &amp; project control)</option>
                     <option value="ADMIN">System Administrator (Full access)</option>
                   </select>
                 </div>
+
+                {/* Assign to Project — visible for DEVELOPER, PROJECT_LEAD, and PROJECT_MANAGER */}
+                {(roleCode === 'PROJECT_MANAGER' || roleCode === 'PROJECT_LEAD' || roleCode === 'DEVELOPER') && (
+                  <div className="mb-4 p-3 rounded-3 border border-primary border-opacity-25 bg-primary bg-opacity-5">
+                    <label className="form-label text-uppercase fw-bold text-muted small d-flex align-items-center gap-1 mb-2" style={{ fontSize: '0.7rem' }}>
+                      <FolderKanban style={{ width: '13px', height: '13px' }} />
+                      Assign to Project <span className="text-muted fw-normal">(optional)</span>
+                    </label>
+                    <select
+                      value={assignProjectId}
+                      onChange={(e) => setAssignProjectId(e.target.value)}
+                      className="form-select form-select-sm bg-white rounded-3 shadow-none text-sm"
+                    >
+                      <option value="">— No project assignment yet —</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          [{p.code}] {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    {assignProjectId && (
+                      <div className="mt-2 d-flex align-items-center gap-1 text-primary small fw-semibold" style={{ fontSize: '0.72rem' }}>
+                        <CheckCircle2 style={{ width: '13px', height: '13px' }} />
+                        Will be added as{' '}
+                        {roleCode === 'PROJECT_MANAGER' ? 'Project Manager'
+                          : roleCode === 'PROJECT_LEAD' ? 'Project Lead'
+                          : 'Developer'}{' '}
+                        to the selected project.
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
                   <button

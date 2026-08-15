@@ -1,6 +1,6 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import apiClient from '../services/apiClient';
 import { ApiResponse, Task, Priority, TaskStatus, ProjectMember, Label } from '../types';
 import { GanttChart } from '../components/gantt/GanttChart';
@@ -13,6 +13,7 @@ export const GanttPage: React.FC = () => {
   const { projectId } = useParams();
   const activeProjectId = projectId || '1';
   const navigate = useNavigate();
+  const location = useLocation();
 
   // 1. Two-way URL Sync Hook
   const { filters, setFilters, resetFilters } = useTaskFiltersUrlSync();
@@ -21,7 +22,7 @@ export const GanttPage: React.FC = () => {
   const debouncedSearch = useDebounce(filters.search, 350);
 
   // 3. Fetch Priorities & Statuses & Members for Filter Bar
-  const { data: statusesData } = useQuery({
+  const { data: statusesData, isLoading: isStatusesLoading } = useQuery({
     queryKey: ['projects', activeProjectId, 'statuses'],
     queryFn: async () => {
       const res = await apiClient.get<ApiResponse<TaskStatus[]>>(`/projects/${activeProjectId}/statuses`);
@@ -53,8 +54,8 @@ export const GanttPage: React.FC = () => {
     },
   });
 
-  // 4. Fetch Search & Filtered Tasks Query
-  const { data: tasksData, isLoading } = useQuery({
+  // 4. Fetch Search & Filtered Tasks Query with keepPreviousData
+  const { data: tasksData, isFetching: isTasksFetching } = useQuery({
     queryKey: [
       'projects',
       activeProjectId,
@@ -82,9 +83,10 @@ export const GanttPage: React.FC = () => {
       const res = await apiClient.get<ApiResponse<Task[]>>(url);
       return res.data.data || [];
     },
+    placeholderData: keepPreviousData,
   });
 
-  if (isLoading) {
+  if (isStatusesLoading && !statusesData) {
     return (
       <div className="d-flex align-items-center justify-content-center text-muted" style={{ height: '380px' }}>
         <RefreshCw className="animate-spin text-primary me-2" style={{ width: '24px', height: '24px' }} />
@@ -106,8 +108,7 @@ export const GanttPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const query = window.location.search;
-                  navigate(`/projects/${activeProjectId}/board${query}`);
+                  navigate(`/projects/${activeProjectId}/board${location.search}`);
                 }}
                 className="btn btn-sm btn-light text-muted hover-text-dark fw-semibold rounded-2 px-3 py-1 text-xs"
               >

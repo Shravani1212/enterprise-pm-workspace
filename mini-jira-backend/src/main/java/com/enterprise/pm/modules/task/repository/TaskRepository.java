@@ -39,4 +39,12 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
 
     @EntityGraph(attributePaths = {"status", "priority", "assignee", "subtasks", "labels"})
     Optional<Task> findWithDetailsById(Long id);
+
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.project.id = :projectId AND UPPER(t.status.code) = UPPER(:statusCode)")
+    long countByProjectIdAndStatusCode(@Param("projectId") Long projectId, @Param("statusCode") String statusCode);
+
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.project.id = :projectId")
+    long countByProjectId(@Param("projectId") Long projectId);
+
+    List<Task> findByProjectIdAndAssigneeId(Long projectId, Long assigneeId);
 }

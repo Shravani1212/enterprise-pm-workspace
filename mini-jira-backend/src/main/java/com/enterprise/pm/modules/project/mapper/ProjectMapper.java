@@ -11,6 +11,10 @@ import com.enterprise.pm.modules.project.entity.ProjectMember;
 public class ProjectMapper {
 
     public static ProjectResponse toProjectResponse(Project project, List<ProjectMemberResponse> members) {
+        return toProjectResponse(project, members, 0L, 0L);
+    }
+
+    public static ProjectResponse toProjectResponse(Project project, List<ProjectMemberResponse> members, Long taskCount, Long completedTaskCount) {
         if (project == null)
             return null;
         return new ProjectResponse(
@@ -23,6 +27,8 @@ public class ProjectMapper {
                 project.getEndDate(),
                 UserMapper.toUserResponse(project.getCreatedBy()),
                 members,
+                taskCount,
+                completedTaskCount,
                 project.getCreatedAt(),
                 project.getUpdatedAt(),
                 project.getVersion());
@@ -41,6 +47,7 @@ public class ProjectMapper {
                 UserMapper.toUserResponse(member.getUser()),
                 member.getProjectRole().getCode(),
                 member.isActive(),
+                member.getLead() != null ? UserMapper.toUserResponse(member.getLead()) : null,
                 member.getJoinedAt());
     }
 }

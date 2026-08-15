@@ -4,7 +4,6 @@ C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\s
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\common\exception\ResourceNotFoundException.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\common\model\BaseEntity.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\common\storage\FileStorageService.java
-C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\config\DataInitializer.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\config\RedisConfig.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\config\SecurityConfig.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\EnterprisePmApplication.java
@@ -17,6 +16,7 @@ C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\s
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\infrastructure\outbox\service\OutboxPublisherService.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\ai\controller\AiAssistantController.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\ai\service\AiAssistantService.java
+C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\bootstrap\DatabaseSeeder.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\controller\AuthController.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\controller\UserController.java
 C:\Users\Kasthuri Shravani\Documents\enterprise-pm-workspace\mini-jira-backend\src\main\java\com\enterprise\pm\modules\auth\dto\AuthDTOs.java

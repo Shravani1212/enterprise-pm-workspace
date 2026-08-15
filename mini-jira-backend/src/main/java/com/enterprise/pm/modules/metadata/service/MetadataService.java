@@ -23,7 +23,16 @@ public class MetadataService {
     @Transactional(readOnly = true)
     @Cacheable(value = "project_statuses", key = "#projectId")
     public List<TaskStatusResponse> getStatusesForProject(Long projectId) {
-        return taskStatusRepository.findActiveByProjectIdOrGlobal(projectId).stream()
+        List<com.enterprise.pm.modules.metadata.entity.TaskStatus> statuses = taskStatusRepository.findActiveByProjectIdOrGlobal(projectId);
+        
+        boolean hasProjectSpecific = statuses.stream().anyMatch(ts -> ts.getProject() != null);
+        if (hasProjectSpecific) {
+            statuses = statuses.stream()
+                    .filter(ts -> ts.getProject() != null)
+                    .toList();
+        }
+
+        return statuses.stream()
                 .map(TaskMapper::toTaskStatusResponse)
                 .toList();
     }

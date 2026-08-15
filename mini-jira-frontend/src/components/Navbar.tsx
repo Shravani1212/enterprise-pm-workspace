@@ -1,24 +1,35 @@
 import React from 'react';
-import { Search, Bell, Sparkles, Plus, Sun, Moon } from 'lucide-react';
+import { Search, Bell, Sparkles, Plus, Sun, Moon, Menu } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface NavbarProps {
   onSearchChange?: (val: string) => void;
   searchValue?: string;
   onNewTaskClick?: () => void;
+  onToggleSidebar?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onNewTaskClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onNewTaskClick, onToggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="navbar navbar-expand bg-white border-bottom px-4 py-2 sticky-top shadow-sm z-3" style={{ height: '64px' }}>
       <div className="container-fluid p-0 d-flex align-items-center justify-content-between">
-        {/* Search Input Bar */}
-        <div className="input-group" style={{ maxWidth: '380px' }}>
-          <span className="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
-            <Search className="h-4 w-4" style={{ width: '16px', height: '16px' }} />
-          </span>
+        {/* Left Side: Burger Menu & Search Input */}
+        <div className="d-flex align-items-center flex-grow-1 me-3" style={{ maxWidth: '380px' }}>
+          <button
+            onClick={onToggleSidebar}
+            className="btn btn-sm btn-light rounded-3 p-2 text-muted border-0 d-block d-lg-none me-2 shrink-0"
+            title="Toggle Navigation Menu"
+            type="button"
+          >
+            <Menu style={{ width: '20px', height: '20px' }} />
+          </button>
+          
+          <div className="input-group">
+            <span className="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+              <Search className="h-4 w-4" style={{ width: '16px', height: '16px' }} />
+            </span>
           <input
             type="text"
             placeholder="Search tasks, assignees, or labels..."
@@ -26,6 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onN
             onChange={(e) => onSearchChange?.(e.target.value)}
             className="form-control form-control-sm bg-light border-start-0 rounded-end-3 text-sm shadow-none"
           />
+          </div>
         </div>
 
         {/* Action Bar */}

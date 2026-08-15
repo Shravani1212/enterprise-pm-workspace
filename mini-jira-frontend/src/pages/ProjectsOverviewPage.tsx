@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FolderKanban, 
@@ -11,13 +11,19 @@ import {
   ArrowRight, 
   X,
   Zap,
-  Target
+  Target,
+  UserCheck,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { ApiResponse, ProjectResponse, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/alertUtils';
 import { formatDateDDMMYYYY, getTodayLocalStr, getFutureLocalStr } from '../utils/dateUtils';
+import { DashboardCalendar } from '../components/dashboard/DashboardCalendar';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const ProjectsOverviewPage: React.FC = () => {
   const { user } = useAuth();
@@ -32,6 +38,7 @@ export const ProjectsOverviewPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectResponse | null>(null);
 
   // Form State
@@ -55,12 +62,21 @@ export const ProjectsOverviewPage: React.FC = () => {
     assignedLeadId: '',
   });
 
+  // Assign Members State (for PM role)
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [assignRoleCode, setAssignRoleCode] = useState('PROJECT_LEAD');
+  const [assigning, setAssigning] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [developerLeadMap, setDeveloperLeadMap] = useState<Record<number, number>>({});
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [projRes, userRes] = await Promise.all([
+      const [projRes, userRes, allUsersRes] = await Promise.all([
         apiClient.get<ApiResponse<ProjectResponse[]>>('/projects'),
-        apiClient.get<ApiResponse<User[]>>('/users').catch(() => ({ data: { success: false, data: [] } }))
+        apiClient.get<ApiResponse<User[]>>('/users?role=PROJECT_MANAGER,ADMIN').catch(() => ({ data: { success: false, data: [] } })),
+        apiClient.get<ApiResponse<User[]>>('/users').catch(() => ({ data: { success: false, data: [] } })),
       ]);
 
       if (projRes.data.success && projRes.data.data) {
@@ -68,6 +84,9 @@ export const ProjectsOverviewPage: React.FC = () => {
       }
       if (userRes.data?.success && userRes.data?.data) {
         setUsers(userRes.data.data);
+      }
+      if (allUsersRes.data?.success && allUsersRes.data?.data) {
+        setAllUsers(allUsersRes.data.data);
       }
     } catch (err: any) {
       // If error, keep empty array
@@ -80,11 +99,36 @@ export const ProjectsOverviewPage: React.FC = () => {
     fetchData();
   }, []);
 
-  const isAdminOrPm = user?.roles?.some((r) => 
-    r === 'ADMIN' || r === 'ROLE_ADMIN' || 
-    r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER' || 
-    r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD'
-  );
+  // ── Role Hierarchy Flags ──────────────────────────────────────────────
+  // ADMIN         : full project CRUD + create/edit/delete/sprint
+  // PROJECT_MANAGER: assign project leads & developers to projects only
+  // PROJECT_LEAD  : tasks + subtasks + sprint planning (no project CRUD)
+  // DEVELOPER     : own assigned tasks + subtasks only
+  const isAdmin = user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') ?? false;
+  const isPm    = user?.roles?.some((r) => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') ?? false;
+  const isLead  = user?.roles?.some((r) => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') ?? false;
+
+  // Only Admin can create / edit / delete projects
+  const canManageProjects = isAdmin;
+  // Admin + Lead can plan sprints
+  const canPlanSprint = isAdmin || isLead;
+  // PM can assign members to projects
+  const canAssignMembers = isPm;
+  // Legacy alias kept for member-management pages
+  const isAdminOrPm = isAdmin || isPm || isLead;
+
+  const projectManagers = useMemo(() => {
+    const pmUsers = users.filter((u) =>
+      u.roles?.some(
+        (r) =>
+          r === 'PROJECT_MANAGER' ||
+          r === 'ROLE_PROJECT_MANAGER' ||
+          r === 'ADMIN' ||
+          r === 'ROLE_ADMIN'
+      )
+    );
+    return pmUsers.length > 0 ? pmUsers : users;
+  }, [users]);
 
   const handleOpenCreate = () => {
     setFormData({
@@ -171,6 +215,7 @@ export const ProjectsOverviewPage: React.FC = () => {
     const payload = {
       name: formData.name.trim(),
       description: formData.description?.trim() || null,
+      status: formData.status,
       startDate: formData.startDate ? formData.startDate : null,
       endDate: formData.endDate ? formData.endDate : null,
     };
@@ -217,6 +262,7 @@ export const ProjectsOverviewPage: React.FC = () => {
     setIsSprintModalOpen(true);
   };
 
+
   const handleSprintSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject) return;
@@ -226,6 +272,110 @@ export const ProjectsOverviewPage: React.FC = () => {
       `Sprint "${sprintData.sprintName}" created for Project ${selectedProject.name} (Goal: ${sprintData.sprintGoal}).`
     );
     setIsSprintModalOpen(false);
+  };
+
+  const getAlreadyAssignedUserIds = (proj: ProjectResponse, roleCode: string) => {
+    if (!proj || !proj.members) return [];
+    return proj.members
+      .filter((m) => m.projectRole === roleCode || m.projectRole === `ROLE_${roleCode}`)
+      .map((m) => m.user.id);
+  };
+
+  // PM: Open Assign Members Modal
+  const handleOpenAssignMembers = (project: ProjectResponse) => {
+    setSelectedProject(project);
+    const initialUserIds = getAlreadyAssignedUserIds(project, 'PROJECT_LEAD');
+    setSelectedUserIds(initialUserIds);
+    setAssignRoleCode('PROJECT_LEAD');
+
+    // Initialize developerLeadMap
+    const initialLeadMap: Record<number, number> = {};
+    project.members?.forEach(m => {
+      const r = m.projectRole?.toUpperCase() || '';
+      if ((r.includes('DEVELOPER') || r.includes('ROLE_DEVELOPER')) && m.lead && m.active) {
+        initialLeadMap[m.user.id] = m.lead.id;
+      }
+    });
+    setDeveloperLeadMap(initialLeadMap);
+
+    setIsAssignModalOpen(true);
+  };
+
+  // PM: Submit multiselect assignment
+  const handleAssignMembersSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject) return;
+
+    setAssigning(true);
+    try {
+      const originallyAssigned = getAlreadyAssignedUserIds(selectedProject, assignRoleCode);
+      const toAdd = selectedUserIds.filter(id => !originallyAssigned.includes(id));
+      const toRemove = originallyAssigned.filter(id => !selectedUserIds.includes(id));
+
+      const addPromises = toAdd.map((uid) => {
+        const leadId = assignRoleCode === 'DEVELOPER' ? developerLeadMap[uid] : undefined;
+        return apiClient.post(`/projects/${selectedProject.id}/members`, {
+          userId: uid,
+          roleCode: assignRoleCode,
+          leadId: leadId || null,
+        });
+      });
+
+      // Also support updating lead for already assigned developers who are still selected
+      const updatePromises: Promise<any>[] = [];
+      if (assignRoleCode === 'DEVELOPER') {
+        const intersection = selectedUserIds.filter(id => originallyAssigned.includes(id));
+        for (const uid of intersection) {
+          const originallyAssignedLeadId = selectedProject.members?.find(m => m.user.id === uid && m.projectRole?.toUpperCase().includes('DEVELOPER'))?.lead?.id;
+          const currentLeadId = developerLeadMap[uid];
+          if (currentLeadId !== originallyAssignedLeadId) {
+            updatePromises.push(
+              apiClient.post(`/projects/${selectedProject.id}/members`, {
+                userId: uid,
+                roleCode: assignRoleCode,
+                leadId: currentLeadId || null,
+              })
+            );
+          }
+        }
+      }
+
+      const removePromises = toRemove.map((uid) =>
+        apiClient.delete(`/projects/${selectedProject.id}/members/${uid}`)
+      );
+
+      const results = await Promise.allSettled([...addPromises, ...removePromises, ...updatePromises]);
+      
+      const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+
+      if (toAdd.length === 0 && toRemove.length === 0 && updatePromises.length === 0) {
+        showSuccessAlert('No Changes', 'No member assignments were changed.');
+      } else if (failed === 0) {
+        showSuccessAlert(
+          'Members Synchronized',
+          `Successfully updated member assignments for project "${selectedProject.name}".`
+        );
+      } else {
+        showSuccessAlert(
+          'Members Updated',
+          `Updated member assignments with ${succeeded} changes completed and ${failed} failures.`
+        );
+      }
+    } catch (err: any) {
+      showErrorAlert('Sync Failed', err.response?.data?.error?.message || 'Failed to update member assignments.');
+    } finally {
+      setAssigning(false);
+      setIsAssignModalOpen(false);
+      fetchData();
+    }
+  };
+
+  // Toggle user selection in multiselect
+  const toggleUserSelection = (userId: number) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
   };
 
   const filteredProjects = projects.filter((p) => {
@@ -255,7 +405,8 @@ export const ProjectsOverviewPage: React.FC = () => {
             </p>
           </div>
 
-          {isAdminOrPm && (
+          {/* Create Project — PM only */}
+          {canManageProjects && (
             <button
               onClick={handleOpenCreate}
               className="btn btn-primary bg-gradient-primary border-0 rounded-3 px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 shrink-0"
@@ -301,136 +452,242 @@ export const ProjectsOverviewPage: React.FC = () => {
         </ul>
       </div>
 
-      {/* Projects Grid */}
-      {loading ? (
-        <div className="row g-4">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="col-12 col-md-6 col-lg-4">
-              <div className="card rounded-4 border-0 bg-light p-5 animate-pulse" style={{ height: '260px' }}></div>
+      {/* Projects Grid split with Calendar Widget: Calendar Left, Projects Right */}
+      <div className="row g-4 mb-5">
+        {/* Left Column: Calendar Widget */}
+        <div className="col-12 col-lg-4 animate-fade-in">
+          <DashboardCalendar
+            projects={projects}
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
+        </div>
+
+        {/* Right Column: Projects & Events */}
+        <div className="col-12 col-lg-8">
+          {loading ? (
+            <LoadingSpinner message="Loading workspace projects..." />
+          ) : filteredProjects.length === 0 ? (
+            <div className="card card-glass p-5 rounded-4 border-0 text-center max-w-md mx-auto my-5">
+              <div className="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-center text-primary mx-auto mb-3" style={{ width: '56px', height: '56px' }}>
+                <FolderKanban style={{ width: '28px', height: '28px' }} />
+              </div>
+              <h3 className="h6 fw-bold text-dark mb-1">No Projects Found</h3>
+              <p className="small text-muted mb-4">
+                There are currently no projects matching your search criteria or active filter.
+              </p>
+              {canManageProjects && (
+                <button
+                  onClick={handleOpenCreate}
+                  className="btn btn-sm btn-primary bg-gradient-primary border-0 rounded-3 px-4 py-2 fw-semibold mx-auto"
+                >
+                  Create First Project
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      ) : filteredProjects.length === 0 ? (
-        <div className="card card-glass p-5 rounded-4 border-0 text-center max-w-md mx-auto my-5">
-          <div className="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-center text-primary mx-auto mb-3" style={{ width: '56px', height: '56px' }}>
-            <FolderKanban style={{ width: '28px', height: '28px' }} />
-          </div>
-          <h3 className="h6 fw-bold text-dark mb-1">No Projects Found</h3>
-          <p className="small text-muted mb-4">
-            There are currently no projects matching your search criteria or active filter.
-          </p>
-          {isAdminOrPm && (
-            <button
-              onClick={handleOpenCreate}
-              className="btn btn-sm btn-primary bg-gradient-primary border-0 rounded-3 px-4 py-2 fw-semibold mx-auto"
-            >
-              Create First Project
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="row g-4">
-          {filteredProjects.map((project) => (
-            <div key={project.id} className="col-12 col-md-6 col-lg-4">
-              <div className="card card-glass card-hover-lift rounded-4 border-0 p-4 d-flex flex-col justify-content-between h-100 position-relative overflow-hidden">
-                {/* Top Card Gradient Bar */}
-                <div className="position-absolute top-0 start-0 end-0 bg-gradient-primary" style={{ height: '4px' }}></div>
+          ) : (
+            <div className="row g-4">
+              {filteredProjects.map((project) => (
+                <div key={project.id} className="col-12 col-md-6">
+                  <div className="card card-glass card-hover-lift rounded-4 border-0 p-4 d-flex flex-column justify-content-between h-100 position-relative overflow-hidden">
+                    {/* Top Card Gradient Bar */}
+                    <div className="position-absolute top-0 start-0 end-0 bg-gradient-primary" style={{ height: '4px' }}></div>
 
-                <div>
-                  {/* Header Info */}
-                  <div className="d-flex align-items-center justify-content-between mb-3 pt-1">
-                    <span className="badge badge-subtle-primary text-uppercase fw-bold rounded-2 px-2 py-1" style={{ fontSize: '0.7rem' }}>
-                      {project.code}
-                    </span>
-                    <span
-                      className={`badge rounded-pill px-2.5 py-1 fw-bold ${
-                        project.status === 'ACTIVE' ? 'badge-subtle-success' : 'bg-light text-secondary border'
-                      }`}
-                      style={{ fontSize: '0.68rem' }}
-                    >
-                      {project.status}
-                    </span>
-                  </div>
-
-                  <h3 className="h6 fw-bold text-dark mb-2 text-truncate" style={{ fontSize: '1.05rem' }}>
-                    {project.name}
-                  </h3>
-                  <p className="small text-secondary mb-4 text-truncate-2" style={{ fontSize: '0.8rem', minHeight: '38px' }}>
-                    {project.description || 'Enterprise workspace tenant project with Kanban sprint tracking.'}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-top">
-                  {/* Dates & Members */}
-                  <div className="d-flex align-items-center justify-content-between small text-muted mb-3" style={{ fontSize: '0.75rem' }}>
-                    <div className="d-flex align-items-center gap-1.5">
-                      <Calendar style={{ width: '14px', height: '14px' }} />
-                      <span>{project.startDate ? formatDateDDMMYYYY(project.startDate) : 'Active'}</span>
-                    </div>
-                    <div className="d-flex align-items-center gap-1.5">
-                      <Users style={{ width: '14px', height: '14px' }} />
-                      <span>{project.members?.length || 4} Members</span>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-3">
-                    <div className="d-flex align-items-center justify-content-between small fw-bold text-dark mb-1" style={{ fontSize: '0.72rem' }}>
-                      <span>Sprint Completion</span>
-                      <span className="text-primary">65%</span>
-                    </div>
-                    <div className="progress rounded-pill" style={{ height: '6px' }}>
-                      <div className="progress-bar bg-gradient-primary rounded-pill w-65" role="progressbar" style={{ width: '65%' }}></div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="d-flex align-items-center justify-content-between pt-1">
-                    <button
-                      onClick={() => navigate(`/projects/${project.id}/board`)}
-                      className="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 d-flex align-items-center gap-1"
-                      style={{ fontSize: '0.8rem' }}
-                    >
-                      <span>Open Kanban Board</span>
-                      <ArrowRight style={{ width: '14px', height: '14px' }} />
-                    </button>
-
-                    {isAdminOrPm && (
-                      <div className="d-flex align-items-center gap-1">
-                        <button
-                          onClick={() => handleOpenSprintPlanning(project)}
-                          className="btn btn-sm btn-light text-primary p-1 rounded-2 d-flex align-items-center gap-1 px-2 border"
-                          title="Plan Sprint"
-                          style={{ fontSize: '0.72rem' }}
+                    <div>
+                      {/* Header Info */}
+                      <div className="d-flex align-items-center justify-content-between mb-3 pt-1">
+                        <span className="badge badge-subtle-primary text-uppercase fw-bold rounded-2 px-2 py-1" style={{ fontSize: '0.7rem' }}>
+                          {project.code}
+                        </span>
+                        <span
+                          className={`badge rounded-pill px-2.5 py-1 fw-bold ${
+                            project.status === 'ACTIVE' ? 'badge-subtle-success' : 'bg-light text-secondary border'
+                          }`}
+                          style={{ fontSize: '0.68rem' }}
                         >
-                          <Zap style={{ width: '13px', height: '13px' }} />
-                          <span className="fw-semibold">Plan Sprint</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleOpenEdit(project)}
-                          className="btn btn-sm btn-light text-muted p-1 rounded-2"
-                          title="Edit Project"
-                        >
-                          <Edit3 style={{ width: '15px', height: '15px' }} />
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteProject(project)}
-                          className="btn btn-sm btn-light text-danger p-1 rounded-2"
-                          title="Delete Project"
-                        >
-                          <Trash2 style={{ width: '15px', height: '15px' }} />
-                        </button>
+                          {project.status}
+                        </span>
                       </div>
-                    )}
+
+                      <h3 className="h6 fw-bold text-dark mb-2 text-truncate" style={{ fontSize: '1.05rem' }}>
+                        {project.name}
+                      </h3>
+                      <p className="small text-secondary mb-4 text-truncate-2" style={{ fontSize: '0.8rem', minHeight: '38px' }}>
+                        {project.description || 'Enterprise workspace tenant project with Kanban sprint tracking.'}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-top mt-auto">
+                      {/* Dates & Members */}
+                      <div className="d-flex align-items-center justify-content-between small text-muted mb-3" style={{ fontSize: '0.75rem' }}>
+                        <div className="d-flex align-items-center gap-1.5">
+                          <Calendar style={{ width: '14px', height: '14px' }} />
+                          <span>{project.startDate ? formatDateDDMMYYYY(project.startDate) : 'No start date'}</span>
+                        </div>
+                        <div className="d-flex align-items-center gap-1.5">
+                          <Users style={{ width: '14px', height: '14px' }} />
+                          <span>{project.members?.length ?? 0} Member{(project.members?.length ?? 0) !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+
+                      {/* Sprint Completion — calculated from real task data */}
+                      <div className="mb-3">
+                        {(() => {
+                          const totalTasks = project.taskCount ?? 0;
+                          const completedTasks = project.completedTaskCount ?? 0;
+                          const percentage = project.status === 'COMPLETED'
+                            ? 100
+                            : totalTasks > 0
+                              ? Math.round((completedTasks / totalTasks) * 100)
+                              : null;
+
+                          return (
+                            <>
+                              <div className="d-flex align-items-center justify-content-between small fw-bold text-dark mb-1" style={{ fontSize: '0.72rem' }}>
+                                <span>Sprint Completion</span>
+                                {percentage === null ? (
+                                  <span className="text-muted fw-normal" style={{ fontSize: '0.68rem' }}>— No tasks yet</span>
+                                ) : (
+                                  <span className={project.status === 'COMPLETED' || percentage === 100 ? "text-success fw-bold" : "text-primary fw-bold"}>
+                                    {percentage}% {percentage === 100 ? '✓' : ''}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="progress rounded-pill bg-light border" style={{ height: '6px' }}>
+                                <div
+                                  className={`progress-bar rounded-pill transition-all ${project.status === 'COMPLETED' || percentage === 100 ? 'bg-success' : 'bg-gradient-primary'}`}
+                                  role="progressbar"
+                                  style={{ width: `${percentage ?? 0}%` }}
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="d-flex align-items-center justify-content-between pt-1">
+                        <button
+                          onClick={() => navigate(`/projects/${project.id}/board`)}
+                          className="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 d-flex align-items-center gap-1"
+                          style={{ fontSize: '0.8rem' }}
+                        >
+                          <span>Open Kanban Board</span>
+                          <ArrowRight style={{ width: '14px', height: '14px' }} />
+                        </button>
+
+                        <div className="d-flex align-items-center gap-1">
+                          {canAssignMembers && (
+                            <button
+                              onClick={() => handleOpenAssignMembers(project)}
+                              className="btn btn-sm btn-light text-primary p-1 rounded-2 d-flex align-items-center gap-1 px-2 border"
+                              title="Assign Members"
+                              style={{ fontSize: '0.72rem' }}
+                            >
+                              <UserCheck style={{ width: '13px', height: '13px' }} />
+                              <span className="fw-semibold">Assign Members</span>
+                            </button>
+                          )}
+
+                          {canPlanSprint && (
+                            <button
+                              onClick={() => handleOpenSprintPlanning(project)}
+                              className="btn btn-sm btn-light text-primary p-1 rounded-2 d-flex align-items-center gap-1 px-2 border"
+                              title="Plan Sprint"
+                              style={{ fontSize: '0.72rem' }}
+                            >
+                              <Zap style={{ width: '13px', height: '13px' }} />
+                              <span className="fw-semibold">Plan Sprint</span>
+                            </button>
+                          )}
+
+                          {canManageProjects && (
+                            <>
+                              <button
+                                onClick={() => handleOpenEdit(project)}
+                                className="btn btn-sm btn-light text-muted p-1 rounded-2"
+                                title="Edit Project"
+                              >
+                                <Edit3 style={{ width: '15px', height: '15px' }} />
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteProject(project)}
+                                className="btn btn-sm btn-light text-danger p-1 rounded-2"
+                                title="Delete Project"
+                              >
+                                <Trash2 style={{ width: '15px', height: '15px' }} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Events Section below Projects (Only displayed if there are events starting/ending on selectedDate) */}
+          {(() => {
+            const formatDateLocal = (date: Date) => {
+              const y = date.getFullYear();
+              const m = String(date.getMonth() + 1).padStart(2, '0');
+              const d = String(date.getDate()).padStart(2, '0');
+              return `${y}-${m}-${d}`;
+            };
+            const dateStr = formatDateLocal(selectedDate);
+            const starts = projects.filter(p => p.startDate === dateStr);
+            const ends = projects.filter(p => p.endDate === dateStr);
+            const hasEvents = starts.length > 0 || ends.length > 0;
+
+            if (!hasEvents) return null; // hides completely if no events
+
+            return (
+              <div className="card card-glass border-0 rounded-4 shadow-sm p-4 mt-4 animate-fade-in">
+                <h3 className="h6 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                  <Target style={{ width: '16px', height: '16px' }} className="text-primary" />
+                  <span>Events for {selectedDate.toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </h3>
+
+                <div className="d-flex flex-column gap-2" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                  {starts.map(p => (
+                    <div
+                      key={`start-${p.id}`}
+                      onClick={() => navigate(`/projects/${p.id}/board`)}
+                      className="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-20 cursor-pointer hover-shadow transition-all d-flex align-items-center justify-content-between"
+                    >
+                      <div className="min-w-0">
+                        <span className="badge bg-success text-white text-uppercase fw-extrabold rounded-1 px-1.5 py-0.5 me-2" style={{ fontSize: '0.58rem' }}>
+                          Starts Today
+                        </span>
+                        <span className="fw-bold text-dark text-sm block mt-1 text-truncate">{p.name}</span>
+                      </div>
+                      <ArrowRight style={{ width: '14px', height: '14px' }} className="text-success flex-shrink-0" />
+                    </div>
+                  ))}
+                  {ends.map(p => (
+                    <div
+                      key={`end-${p.id}`}
+                      onClick={() => navigate(`/projects/${p.id}/board`)}
+                      className="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-20 cursor-pointer hover-shadow transition-all d-flex align-items-center justify-content-between"
+                    >
+                      <div className="min-w-0">
+                        <span className="badge bg-danger text-white text-uppercase fw-extrabold rounded-1 px-1.5 py-0.5 me-2" style={{ fontSize: '0.58rem' }}>
+                          Ends Today
+                        </span>
+                        <span className="fw-bold text-dark text-sm block mt-1 text-truncate">{p.name}</span>
+                      </div>
+                      <ArrowRight style={{ width: '14px', height: '14px' }} className="text-danger flex-shrink-0" />
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })()}
         </div>
-      )}
+      </div>
 
       {/* Create Project Modal */}
       {isCreateModalOpen && (
@@ -487,7 +744,7 @@ export const ProjectsOverviewPage: React.FC = () => {
                     className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold text-dark"
                   >
                     <option value="">Select Project Manager (Optional)</option>
-                    {users.map((u) => (
+                    {projectManagers.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.firstName} {u.lastName} (@{u.username})
                       </option>
@@ -593,7 +850,7 @@ export const ProjectsOverviewPage: React.FC = () => {
                     className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold text-dark"
                   >
                     <option value="">Select Project Manager (Optional)</option>
-                    {users.map((u) => (
+                    {projectManagers.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.firstName} {u.lastName} (@{u.username})
                       </option>
@@ -719,6 +976,162 @@ export const ProjectsOverviewPage: React.FC = () => {
                     <Zap style={{ width: '14px', height: '14px' }} />
                     <span>Launch & Plan Sprint</span>
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Members Modal (PROJECT_MANAGER multiselect) */}
+      {isAssignModalOpen && selectedProject && (
+        <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
+          <div className="modal-dialog modal-dialog-centered modal-md">
+            <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+              <div className="modal-header bg-gradient-primary text-white border-0 px-4 py-3">
+                <div className="d-flex align-items-center gap-2">
+                  <UserCheck className="text-white" style={{ width: '18px', height: '18px' }} />
+                  <h5 className="modal-title fw-bold text-white mb-0" style={{ fontSize: '1.5rem' }}>Assign Members — {selectedProject.name}</h5>
+                </div>
+                <button onClick={() => setIsAssignModalOpen(false)} className="btn-close btn-close-white shadow-none"></button>
+              </div>
+
+              <form onSubmit={handleAssignMembersSubmit} className="modal-body p-4">
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Select Role to Assign</label>
+                  <select
+                    value={assignRoleCode}
+                    onChange={(e) => {
+                      const nextRole = e.target.value;
+                      setAssignRoleCode(nextRole);
+                      const initialUserIds = getAlreadyAssignedUserIds(selectedProject, nextRole);
+                      setSelectedUserIds(initialUserIds);
+
+                      if (nextRole === 'DEVELOPER') {
+                        const initialLeadMap: Record<number, number> = {};
+                        selectedProject.members?.forEach(m => {
+                          const r = m.projectRole?.toUpperCase() || '';
+                          if ((r.includes('DEVELOPER') || r.includes('ROLE_DEVELOPER')) && m.lead && m.active) {
+                            initialLeadMap[m.user.id] = m.lead.id;
+                          }
+                        });
+                        setDeveloperLeadMap(initialLeadMap);
+                      }
+                    }}
+                    className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
+                  >
+                    <option value="PROJECT_LEAD">PROJECT LEAD</option>
+                    <option value="DEVELOPER">DEVELOPER</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>
+                    Select Users ({selectedUserIds.length} Selected)
+                  </label>
+                  <div className="border rounded-3 p-2 bg-light overflow-auto animate-fade-in" style={{ maxHeight: '200px' }}>
+                    {allUsers.filter(u => u.roles?.some(r => r === assignRoleCode || r === `ROLE_${assignRoleCode}`)).map((u) => {
+                      const isSelected = selectedUserIds.includes(u.id);
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => toggleUserSelection(u.id)}
+                          className={`d-flex align-items-center justify-content-between p-2 rounded-2 mb-1 cursor-pointer transition-all ${
+                            isSelected ? 'bg-primary bg-opacity-10 border border-primary border-opacity-25' : 'bg-white border hover-bg-light'
+                          }`}
+                          style={{ fontSize: '0.8rem' }}
+                        >
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="d-flex align-items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                readOnly
+                                className="form-check-input mt-0"
+                                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                              />
+                              <span className="fw-semibold text-dark">
+                                {u.firstName} {u.lastName} (@{u.username})
+                              </span>
+                            </div>
+
+                            {/* Project Lead dropdown mapping */}
+                            {isSelected && assignRoleCode === 'DEVELOPER' && (
+                              <div className="d-flex align-items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-muted text-xs" style={{ fontSize: '0.65rem' }}>Lead:</span>
+                                <select
+                                  value={developerLeadMap[u.id] || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setDeveloperLeadMap(prev => ({
+                                      ...prev,
+                                      [u.id]: val ? Number(val) : 0
+                                    }));
+                                  }}
+                                  className="form-select form-select-xs bg-white rounded-2 shadow-none py-0.5 text-xs text-dark"
+                                  style={{ width: 'auto', minWidth: '120px', fontSize: '0.65rem', height: '22px' }}
+                                >
+                                  <option value="">Select Lead...</option>
+                                  {(selectedProject.members || [])
+                                    .filter(m => {
+                                      const r = m.projectRole?.toUpperCase() || '';
+                                      return (r.includes('PROJECT_LEAD') || r.includes('ROLE_PROJECT_LEAD')) && m.active;
+                                    })
+                                    .map(pl => (
+                                      <option key={pl.user.id} value={pl.user.id}>
+                                        {pl.user.firstName} {pl.user.lastName} (@{pl.user.username})
+                                      </option>
+                                    ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-muted text-xs">{u.email}</span>
+                        </div>
+                      );
+                    })}
+                    {allUsers.filter(u => u.roles?.some(r => r === assignRoleCode || r === `ROLE_${assignRoleCode}`)).length === 0 && (
+                      <div className="text-center text-muted small py-3 italic">
+                        No registered users with {assignRoleCode.replace('_', ' ')} role.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                  <button
+                    type="button"
+                    onClick={() => setIsAssignModalOpen(false)}
+                    className="btn btn-sm btn-light fw-semibold text-secondary px-3 rounded-3"
+                  >
+                    Cancel
+                  </button>
+                  {(() => {
+                    const originallyAssigned = getAlreadyAssignedUserIds(selectedProject, assignRoleCode);
+                    const toAdd = selectedUserIds.filter(id => !originallyAssigned.includes(id));
+                    const toRemove = originallyAssigned.filter(id => !selectedUserIds.includes(id));
+
+                    let btnText = 'Save Assignments';
+                    if (assigning) {
+                      btnText = 'Saving...';
+                    } else if (toAdd.length > 0 && toRemove.length > 0) {
+                      btnText = 'Update Assignments';
+                    } else if (toRemove.length > 0 && toAdd.length === 0) {
+                      btnText = 'Unassign Selected';
+                    } else if (toAdd.length > 0 && toRemove.length === 0) {
+                      btnText = 'Assign Selected';
+                    }
+
+                    return (
+                      <button
+                        type="submit"
+                        disabled={assigning}
+                        className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 shadow-sm d-flex align-items-center gap-1.5"
+                      >
+                        <span>{btnText}</span>
+                      </button>
+                    );
+                  })()}
                 </div>
               </form>
             </div>

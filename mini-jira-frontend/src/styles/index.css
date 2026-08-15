@@ -1,7 +1,40 @@
-@import 'bootstrap/dist/css/bootstrap.min.css';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ── Vanilla CSS Layout & Style Utilities (Replaces Tailwind dependencies) ── */
+.rounded-4 { border-radius: 1rem !important; }
+.rounded-5 { border-radius: 1.5rem !important; }
+.shadow-xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; }
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18) !important; }
+.cursor-grab { cursor: grab !important; }
+.pointer-events-none { pointer-events: none !important; }
+.user-select-none { user-select: none !important; }
+.transition-all { transition: all 0.25s ease-in-out !important; }
+.hover-scale:hover { transform: scale(1.02) !important; }
+.text-xs { font-size: 0.75rem !important; }
+.text-sm { font-size: 0.875rem !important; }
+.hover-bg-light:hover { background-color: rgba(241, 245, 249, 0.85) !important; }
+.hover-text-dark:hover { color: #0f172a !important; }
+.hover-opacity-100:hover { opacity: 1 !important; }
+.cursor-pointer { cursor: pointer !important; }
+.cursor-default { cursor: default !important; }
+.shrink-0 { flex-shrink: 0 !important; }
+
+.bg-gradient-app {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%) !important;
+}
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+}
+.bg-gradient-accent {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%) !important;
+}
+.bg-gradient-card-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f4fe 100%) !important;
+}
+.shadow-glass {
+  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.08) !important;
+}
+.shadow-card-hover:hover {
+  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.12) !important;
+}
 
 :root {
   --bs-primary: #4f46e5;
@@ -66,7 +99,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .bg-gradient-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%) !important;
 }
 
 .bg-gradient-dark-header {
@@ -97,6 +130,36 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-4px);
   border-color: rgba(99, 102, 241, 0.4) !important;
   box-shadow: 0 16px 32px -6px rgba(79, 70, 229, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.08) !important;
+}
+
+.kanban-column-bg {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+}
+
+[data-bs-theme="dark"] .kanban-column-bg {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+}
+
+.task-card-elevated {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.task-card-elevated:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 14px 28px -4px rgba(79, 70, 229, 0.16), 0 4px 10px -2px rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .task-card-elevated {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
 }
 
 .kanban-column-card {
@@ -238,11 +301,21 @@ h1, h2, h3, h4, h5, h6 {
   background: #94a3b8;
 }
 
-/* Smooth Slide Animations */
+/* ═══════════════════════════════════════════════════════════════════
+   SLIDE-UP ENTRANCE ANIMATION
+   Used on login page columns and cards when the page first loads.
+   How it works:
+     - Element starts invisible (opacity 0) and 28px below its real position.
+     - Over 0.55 s it fades in AND slides upward to its natural position.
+     - cubic-bezier(0.16, 1, 0.3, 1) → a spring-like curve: fast start,
+       soft landing — feels snappy without being jerky.
+   - `animation-fill-mode: both` means the element is invisible even
+     during an animation-delay, preventing a flash of content.
+═══════════════════════════════════════════════════════════════════ */
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(28px);
   }
   to {
     opacity: 1;
@@ -251,7 +324,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .animate-slide-up {
-  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* `both` = apply from/to states even before & after the animation runs */
+  animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeIn {
@@ -263,31 +337,52 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeIn 0.2s ease-in forwards;
 }
 
-/* Floating Orb & Mesh Background Keyframes */
+/* ═══════════════════════════════════════════════════════════════════
+   FLOATING ORB BACKGROUND ANIMATIONS
+   Used on the large blurred gradient blobs in the login background.
+   How it works:
+     - floatSlow: gently moves the element 18px upward then back down,
+       while slightly rotating ±3°. Creates a subtle "breathing" effect.
+     - animate-float-slow: applies floatSlow over 7 seconds, looping
+       forever with ease-in-out for a smooth, organic rhythm.
+     - The second blob uses animation-delay: 3s so it is offset by half
+       a cycle — when one blob rises, the other dips.
+═══════════════════════════════════════════════════════════════════ */
 @keyframes floatSlow {
-  0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-18px) rotate(3deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
-}
-
-@keyframes pulseGlow {
-  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
-  70% { box-shadow: 0 0 0 15px rgba(79, 70, 229, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
-}
-
-@keyframes floatReverse {
-  0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(15px) rotate(-3deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
+  0%   { transform: translateY(0px)   rotate(0deg); }
+  50%  { transform: translateY(-18px) rotate(3deg); }
+  100% { transform: translateY(0px)   rotate(0deg); }
 }
 
 .animate-float-slow {
+  /* 7 s is long enough to feel calm, not distracting */
   animation: floatSlow 7s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FLOAT REVERSE — identical but floats downward (positive Y)
+   Used to add variety when multiple floating elements are on screen.
+═══════════════════════════════════════════════════════════════════ */
+@keyframes floatReverse {
+  0%   { transform: translateY(0px)  rotate(0deg);  }
+  50%  { transform: translateY(15px) rotate(-3deg); }
+  100% { transform: translateY(0px)  rotate(0deg);  }
 }
 
 .animate-float-reverse {
   animation: floatReverse 9s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PULSE GLOW — expanding ring of colour that fades out
+   Used on indicators and badges that need to show "live / active" state.
+   How it works: a box-shadow starts at 0 radius, expands to 15px,
+   and fades its opacity to 0 — like a sonar ping.
+═══════════════════════════════════════════════════════════════════ */
+@keyframes pulseGlow {
+  0%   { box-shadow: 0 0 0 0   rgba(79, 70, 229, 0.4); }
+  70%  { box-shadow: 0 0 0 15px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(79, 70, 229, 0); }
 }
 
 .animate-pulse-glow {
@@ -296,7 +391,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Login Split Page Styling */
 .login-split-container {
-  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 50%, #e2e8f0 100%);
+  /* Rich multi-stop gradient mesh — makes the light theme vibrant */
+  background:
+    radial-gradient(ellipse at 15% 40%, rgba(99,102,241,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 10%, rgba(168,85,247,0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 90%, rgba(219,39,119,0.10) 0%, transparent 50%),
+    linear-gradient(135deg, #f0f4ff 0%, #f5f0ff 40%, #fdf2ff 70%, #fff0f6 100%);
   position: relative;
   overflow: hidden;
 }
@@ -306,11 +406,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .glass-login-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0,0,0,0.1);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  box-shadow:
+    0 30px 60px -15px rgba(99, 102, 241, 0.18),
+    0 0 0 1px rgba(255,255,255,0.8) inset;
 }
 
 [data-bs-theme="dark"] .glass-login-card {
@@ -406,5 +508,149 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5);
 }
+
+@keyframes logo-heartbeat {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.2);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 10px 25px 0 rgba(79, 70, 229, 0.4);
+  }
+}
+
+.logo-pulse-anim {
+  animation: logo-heartbeat 1.6s ease-in-out infinite;
+}
+
+/* Custom Spacing & Center Alignment fallbacks */
+.justify-center {
+  justify-content: center !important;
+}
+
+.gap-1\.5 {
+  gap: 0.375rem !important; /* 6px */
+}
+
+.gap-2\.5 {
+  gap: 0.625rem !important; /* 10px */
+}
+
+.gap-3\.5 {
+  gap: 0.875rem !important; /* 14px */
+}
+
+/* Kanban column capacity limit exceeded warning styling */
+.kanban-column-exceeded {
+  background-color: #fff5f5 !important; /* light red */
+  border: 1px solid #f87171 !important; /* red border */
+}
+
+[data-bs-theme="dark"] .kanban-column-exceeded {
+  background-color: #451d1d !important;
+  border: 1px solid #b91c1c !important;
+}
+
+/* Custom premium visible scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.35) !important;
+  border-radius: 6px;
+  border: 1px solid rgba(79, 70, 229, 0.1);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 70, 229, 0.6) !important;
+}
+
+/* Prevent horizontal/vertical scrolling on body and layout elements to lock height to 100vh */
+html, body, #root, .min-vh-100 {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* Responsive Kanban Columns */
+.kanban-column-card {
+  width: 320px !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s ease-in-out;
+}
+
+@media (max-width: 767.98px) {
+  .kanban-column-card {
+    width: 290px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kanban-column-card {
+    width: 260px !important;
+  }
+}
+
+/* Ensure the Kanban board container scrolls horizontally, and show premium custom thin scrollbar */
+.kanban-board-scroll-container {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Custom premium visible scrollbar styles for board container */
+.kanban-board-scroll-container::-webkit-scrollbar {
+  height: 6px !important;
+  display: block !important;
+}
+.kanban-board-scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-radius: 6px !important;
+}
+.kanban-board-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.25) !important;
+  border-radius: 6px !important;
+}
+.kanban-board-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 70, 229, 0.5) !important;
+}
+
+/* Responsive Sidebar classes for tablet/mobile viewports */
+@media (max-width: 991.98px) {
+  .sidebar-responsive {
+    position: fixed !important;
+    top: 0;
+    left: -260px;
+    height: 100vh;
+    z-index: 1050;
+    transition: left 0.3s ease-in-out;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .sidebar-responsive.show {
+    left: 0 !important;
+  }
+  
+  .sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+  }
+}
+
+
 
 

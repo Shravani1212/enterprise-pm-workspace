@@ -261,10 +261,25 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+    public List<UserResponse> getUsers(String role) {
+        if (role == null || role.isBlank()) {
+            return userRepository.findAll().stream()
+                    .map(UserMapper::toUserResponse)
+                    .toList();
+        }
+        List<String> rolesList = java.util.Arrays.stream(role.split(","))
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> !s.isBlank())
+                .toList();
+        return userRepository.findByRoleCodesIn(rolesList).stream()
                 .map(UserMapper::toUserResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> getAllUsers() {
+        return getUsers(null);
     }
 
     private String hashToken(String rawToken) {

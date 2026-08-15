@@ -30,6 +30,7 @@ public class ProjectDTOs {
         String name,
 
         String description,
+        String status,
         LocalDate startDate,
         LocalDate endDate
     ) {}
@@ -44,6 +45,8 @@ public class ProjectDTOs {
         LocalDate endDate,
         UserResponse createdBy,
         List<ProjectMemberResponse> members,
+        Long taskCount,
+        Long completedTaskCount,
         Instant createdAt,
         Instant updatedAt,
         Long version
@@ -55,6 +58,7 @@ public class ProjectDTOs {
         UserResponse user,
         String projectRole,
         boolean active,
+        UserResponse lead,
         Instant joinedAt
     ) {}
 
@@ -63,6 +67,8 @@ public class ProjectDTOs {
         Long userId,
 
         @jakarta.validation.constraints.NotBlank(message = "Role code is required")
-        String roleCode
+        String roleCode,
+
+        Long leadId
     ) {}
 }

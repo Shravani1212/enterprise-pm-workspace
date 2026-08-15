@@ -30,12 +30,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`card border-0 shadow-sm rounded-4 p-3 d-flex flex-column max-h-100 flex-shrink-0 transition-all kanban-column-card ${
+      className={`card p-3 d-flex flex-column max-h-100 flex-shrink-0 transition-all kanban-column-card ${
         isCapacityExceeded
-          ? 'bg-danger bg-opacity-10 border border-danger border-opacity-50 shadow-md'
-          : 'card-glass'
+          ? 'kanban-column-exceeded shadow-md'
+          : 'kanban-column-bg'
       }`}
-      style={{ width: '320px' }}
     >
       {/* Column Header */}
       <div className="d-flex align-items-center justify-content-between mb-3 px-1">
@@ -81,10 +80,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         )}
       </div>
 
-      {/* Quick Add Button (Only for Admin, PM, Project Lead) */}
-      {user?.roles?.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN' || r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER' || r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') && (
+      {/* Quick Add Button (Only for PM — NOT Lead/Dev/Admin) */}
+      {(user?.roles?.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') && onAddTaskClick) && (
         <button
-          onClick={() => onAddTaskClick?.(status.id)}
+          onClick={() => onAddTaskClick(status.id)}
           className="btn btn-sm btn-outline-primary border-dashed rounded-3 w-100 d-flex align-items-center justify-center gap-1.5 mt-2 fw-semibold"
           style={{ fontSize: '0.8rem' }}
         >

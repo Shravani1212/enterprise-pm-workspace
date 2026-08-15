@@ -34,6 +34,10 @@ public class ProjectMember {
     @JoinColumn(name = "project_role_id", nullable = false)
     private Role projectRole;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lead_id")
+    private User lead;
+
     @Column(name = "active", nullable = false)
     @Builder.Default
     private boolean active = true;

@@ -21,6 +21,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { ApiResponse, Project, Task, User } from '../types';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import GlobalDataTable, { DataTableColumn } from '../components/common/GlobalDataTable';
 
 export const DashboardPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -91,13 +93,7 @@ export const DashboardPage: React.FC = () => {
   }, [currentUser]);
 
   if (loading) {
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading dynamic role dashboard...</span>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading dynamic role dashboard..." />;
   }
 
   return (
@@ -589,52 +585,45 @@ const DeveloperDynamicDashboard: React.FC<{
         </div>
       </div>
 
-      {/* Dynamic Assigned Tasks Table */}
+      {/* Dynamic Assigned Tasks – GlobalDataTable */}
       <div className="row g-4">
         <div className="col-12 col-lg-8">
-          <div className="card card-glass border-0 shadow-sm rounded-4 p-4 h-100">
-            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
-              <h5 className="h6 fw-bold text-dark mb-0">My Assigned Tasks</h5>
-              <span className="badge badge-subtle-primary rounded-pill px-2.5 py-1 small">{myAssignedTasks.length} Assigned</span>
-            </div>
-
-            <div className="table-responsive">
-              <table className="table align-middle mb-0">
-                <thead className="table-light text-uppercase small text-muted" style={{ fontSize: '0.7rem' }}>
-                  <tr>
-                    <th>Task Title</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Hours Logged</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {myAssignedTasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center py-4 text-muted small">No tasks currently assigned. Select a project from the left menu to view tasks.</td>
-                    </tr>
-                  ) : (
-                    myAssignedTasks.slice(0, 5).map(t => (
-                      <tr key={t.id}>
-                        <td className="fw-bold text-dark small py-3">{t.title}</td>
-                        <td>
-                          <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-0.5 small">
-                            {t.priority?.name || 'MEDIUM'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="badge bg-warning bg-opacity-10 text-warning px-2 py-0.5 small">
-                            {t.status?.name || 'IN_PROGRESS'}
-                          </span>
-                        </td>
-                        <td className="text-muted small">{t.loggedHours || 0}h</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <GlobalDataTable<Task>
+            id="dashboard-tasks-table"
+            title="My Assigned Tasks"
+            columns={[
+              {
+                key: 'title',
+                label: 'Task Title',
+                render: (t) => <span className="fw-bold text-dark small">{t.title}</span>,
+              },
+              {
+                key: 'priority.name',
+                label: 'Priority',
+                render: (t) => (
+                  <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 small">
+                    {t.priority?.name || 'MEDIUM'}
+                  </span>
+                ),
+              },
+              {
+                key: 'status.name',
+                label: 'Status',
+                render: (t) => (
+                  <span className="badge bg-warning bg-opacity-10 text-warning px-2 small">
+                    {t.status?.name || 'IN_PROGRESS'}
+                  </span>
+                ),
+              },
+              {
+                key: 'loggedHours',
+                label: 'Hours Logged',
+                render: (t) => <span className="text-muted small">{t.loggedHours || 0}h</span>,
+              },
+            ] as DataTableColumn<Task>[]}
+            data={myAssignedTasks}
+            exportFileName="my_assigned_tasks"
+          />
         </div>
 
         {/* Dynamic Assigned Projects List */}

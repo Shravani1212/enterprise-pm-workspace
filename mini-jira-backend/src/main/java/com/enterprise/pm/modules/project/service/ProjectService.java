@@ -15,6 +15,8 @@ import com.enterprise.pm.modules.project.mapper.ProjectMapper;
 import com.enterprise.pm.modules.project.repository.ProjectMemberRepository;
 import com.enterprise.pm.modules.project.repository.ProjectRepository;
 import com.enterprise.pm.modules.project.repository.ProjectSettingsRepository;
+import com.enterprise.pm.modules.task.entity.Task;
+import com.enterprise.pm.modules.task.repository.TaskRepository;
 import com.enterprise.pm.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -35,15 +37,24 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TaskStatusRepository taskStatusRepository;
+    private final TaskRepository taskRepository;
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> getUserProjects(UserPrincipal currentUser) {
-        // Return active workspace projects for all authenticated users
-        List<Project> projects = projectRepository.findAll();
+        boolean showAll = currentUser == null || currentUser.getId() == null ||
+                currentUser.getAuthorities().stream().anyMatch(a ->
+                        a.getAuthority().equals("ROLE_ADMIN")
+                );
+
+        List<Project> projects = showAll
+                ? projectRepository.findAll()
+                : projectRepository.findProjectsByUserId(currentUser.getId());
 
         return projects.stream().map(p -> {
             List<ProjectMemberResponse> members = getProjectMembers(p.getId());
-            return ProjectMapper.toProjectResponse(p, members);
+            long taskCount = taskRepository.countByProjectId(p.getId());
+            long completedCount = taskRepository.countByProjectIdAndStatusCode(p.getId(), "DONE");
+            return ProjectMapper.toProjectResponse(p, members, taskCount, completedCount);
         }).toList();
     }
 
@@ -53,7 +64,9 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with ID: " + id));
         List<ProjectMemberResponse> members = getProjectMembers(id);
-        return ProjectMapper.toProjectResponse(project, members);
+        long taskCount = taskRepository.countByProjectId(id);
+        long completedCount = taskRepository.countByProjectIdAndStatusCode(id, "DONE");
+        return ProjectMapper.toProjectResponse(project, members, taskCount, completedCount);
     }
 
     @Transactional
@@ -75,6 +88,9 @@ public class ProjectService {
         }
         if (request.description() != null) {
             project.setDescription(request.description());
+        }
+        if (request.status() != null && !request.status().isBlank()) {
+            project.setStatus(request.status());
         }
         if (request.startDate() != null) {
             project.setStartDate(request.startDate());
@@ -156,6 +172,14 @@ public class ProjectService {
     @CacheEvict(value = "project_memberships", key = "#request.userId() + '_' + #projectId")
     @Transactional
     public ProjectMemberResponse addProjectMember(Long projectId, AddMemberRequest request) {
+        String rCode = request.roleCode() != null ? request.roleCode().toUpperCase() : "";
+        if (rCode.contains("PROJECT_MANAGER") || rCode.contains("ADMIN")) {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                throw new org.springframework.security.access.AccessDeniedException("Only Administrators can assign Project Manager or Administrator roles");
+            }
+        }
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with ID: " + projectId));
 
@@ -174,6 +198,14 @@ public class ProjectService {
         member.setProjectRole(role);
         member.setActive(true);
 
+        if (request.leadId() != null) {
+            User leadUser = userRepository.findById(request.leadId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Lead user not found with ID: " + request.leadId()));
+            member.setLead(leadUser);
+        } else {
+            member.setLead(null);
+        }
+
         ProjectMember savedMember = projectMemberRepository.save(member);
         return ProjectMapper.toProjectMemberResponse(savedMember);
     }
@@ -186,6 +218,13 @@ public class ProjectService {
 
         member.setActive(false);
         projectMemberRepository.save(member);
+
+        // Synchronously unassign any tasks assigned to this user in this project
+        List<Task> assignedTasks = taskRepository.findByProjectIdAndAssigneeId(projectId, userId);
+        for (Task task : assignedTasks) {
+            task.setAssignee(null);
+            taskRepository.save(task);
+        }
     }
 
     @Transactional
@@ -199,7 +238,7 @@ public class ProjectService {
     private void seedProjectStatuses(Project project) {
         List<TaskStatus> initialStatuses = List.of(
                 TaskStatus.builder().project(project).name("Backlog").code("BACKLOG").displayOrder(1).color("#94a3b8").capacityLimit(0).active(true).build(),
-                TaskStatus.builder().project(project).name("To Do").code("TODO").displayOrder(2).color("#3b82f6").capacityLimit(0).active(true).build(),
+                TaskStatus.builder().project(project).name("To Do").code("TODO").displayOrder(2).color("#3b82f6").capacityLimit(3).active(true).build(),
                 TaskStatus.builder().project(project).name("In Progress").code("IN_PROGRESS").displayOrder(3).color("#f59e0b").capacityLimit(3).active(true).build(),
                 TaskStatus.builder().project(project).name("Done").code("DONE").displayOrder(4).color("#10b981").capacityLimit(0).active(true).build()
         );

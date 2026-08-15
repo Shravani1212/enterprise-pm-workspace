@@ -1,6 +1,7 @@
 package com.enterprise.pm.modules.ai.service;
 
 import com.enterprise.pm.modules.task.dto.TaskDTOs.TaskResponse;
+import com.enterprise.pm.modules.task.repository.TaskRepository;
 import com.enterprise.pm.modules.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class AiAssistantService {
 
     private final TaskService taskService;
+    private final TaskRepository taskRepository;
 
     public record ChatRequest(
         Long projectId,
@@ -32,20 +34,20 @@ public class AiAssistantService {
         String input = request.message().toLowerCase().trim();
         Long projectId = request.projectId() != null ? request.projectId() : 1L;
 
-        // Tool 1: AI Project Summary & WIP Bottleneck Tool
+        // Tool 1: AI Project Summary & WIP Bottleneck Tool - DB WHERE Clause Queries
         if (input.contains("summary") || input.contains("status") || input.contains("progress")) {
-            List<TaskResponse> tasks = taskService.getTasksByProjectId(projectId);
-            long completed = tasks.stream().filter(t -> "DONE".equalsIgnoreCase(t.status().code())).count();
-            long inProgress = tasks.stream().filter(t -> "IN_PROGRESS".equalsIgnoreCase(t.status().code())).count();
+            long totalTasks = taskRepository.countByProjectId(projectId);
+            long completed = taskRepository.countByProjectIdAndStatusCode(projectId, "DONE");
+            long inProgress = taskRepository.countByProjectIdAndStatusCode(projectId, "IN_PROGRESS");
 
             Map<String, Object> summary = new HashMap<>();
-            summary.put("totalTasks", tasks.size());
+            summary.put("totalTasks", totalTasks);
             summary.put("completedTasks", completed);
             summary.put("inProgressTasks", inProgress);
-            summary.put("completionRate", tasks.isEmpty() ? "0%" : (completed * 100 / tasks.size()) + "%");
+            summary.put("completionRate", totalTasks == 0 ? "0%" : (completed * 100 / totalTasks) + "%");
 
             String reply = String.format("🤖 Project #%d Summary: %d total tasks, %d in-progress, %d completed (%s completion rate).",
-                    projectId, tasks.size(), inProgress, completed, summary.get("completionRate"));
+                    projectId, totalTasks, inProgress, completed, summary.get("completionRate"));
 
             return new ChatResponse(reply, "TOOL_GET_PROJECT_SUMMARY", summary);
         }
@@ -58,7 +60,7 @@ public class AiAssistantService {
         }
 
         // Default Assistant Guidance Response
-        String guidance = "🤖 Hello! I am your AI Project Assistant. I can summarize project health, analyze WIP bottlenecks, and execute tool calls for task management. Try asking 'Give me a project summary'.";
-        return new ChatResponse(guidance, "NONE", null);
+        String reply = "🤖 ProjectPulse AI Assistant active. You can ask for 'summary', 'status', 'progress', or 'search tasks'.";
+        return new ChatResponse(reply, "TOOL_DEFAULT_HELP", null);
     }
 }

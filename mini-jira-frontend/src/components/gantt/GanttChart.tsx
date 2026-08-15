@@ -98,9 +98,35 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
               const taskStart = task.startDate ? new Date(task.startDate) : currentStartDate;
               const taskEnd = task.endDate ? new Date(task.endDate) : addDays(taskStart, 4);
 
-              // Calculate start column offset & span length
-              const startOffset = Math.max(0, differenceInDays(taskStart, days[0]));
-              const duration = Math.max(2, differenceInDays(taskEnd, taskStart) + 1);
+              // Normalize dates to midnight for accurate calculation
+              const startOfTimeline = new Date(days[0]);
+              startOfTimeline.setHours(0, 0, 0, 0);
+
+              const sDate = new Date(taskStart);
+              sDate.setHours(0, 0, 0, 0);
+
+              const eDate = new Date(taskEnd);
+              eDate.setHours(0, 0, 0, 0);
+
+              // Check if task has exceeded its end date and is still incomplete
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const isExceeded = today > eDate && progressPct < 100;
+
+              // Calculate start column offset & visible span length within the 16-day grid
+              let startOffset = 0;
+              let duration = 0;
+
+              if (sDate >= startOfTimeline) {
+                startOffset = differenceInDays(sDate, startOfTimeline);
+                duration = differenceInDays(eDate, sDate) + 1;
+              } else {
+                startOffset = 0;
+                duration = differenceInDays(eDate, startOfTimeline) + 1;
+              }
+
+              duration = Math.max(0, duration);
+              const visibleSpan = Math.min(duration, 16 - startOffset);
 
               return (
                 <div key={task.id} className="d-flex align-items-center border-bottom hover-bg-light transition-all" style={{ height: '62px' }}>
@@ -121,25 +147,27 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
 
                   {/* Timeline Bar Cell Grid matching Image 2 */}
                   <div className="flex-grow-1 d-grid align-items-center position-relative px-2" style={{ gridTemplateColumns: 'repeat(16, 1fr)', height: '100%' }}>
-                    {startOffset < 16 && (
+                    {startOffset < 16 && visibleSpan > 0 && (
                       <div
                         style={{
                           gridColumnStart: startOffset + 1,
-                          gridColumnEnd: `span ${Math.min(duration, 16 - startOffset)}`,
+                          gridColumnEnd: `span ${visibleSpan}`,
                           height: '30px',
-                          border: '1px solid #bfdbfe',
-                          backgroundColor: '#eff6ff'
+                          border: isExceeded ? '1px solid #fca5a5' : '1px solid #bfdbfe',
+                          backgroundColor: isExceeded ? '#fef2f2' : '#eff6ff'
                         }}
                         className="rounded-pill shadow-xs gantt-bar-hover d-flex align-items-center justify-content-center text-dark position-relative overflow-hidden cursor-pointer"
                         onClick={() => onTaskClick?.(task)}
-                        title={`${task.title} (${progressPct}% complete)`}
+                        title={`${task.title} (${progressPct}% complete) ${isExceeded ? '⚠️ Exceeded End Date!' : ''}`}
                       >
                         {/* Gradient Progress Fill Shading matching Image 2 cyan/blue bar */}
                         <div
                           className="position-absolute start-0 top-0 bottom-0 rounded-pill transition-all"
                           style={{
                             width: `${progressPct}%`,
-                            background: 'linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%)'
+                            background: isExceeded 
+                              ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+                              : 'linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%)'
                           }}
                         ></div>
 
@@ -147,7 +175,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
                         <span 
                           className="fw-bold position-relative z-1 text-xs" 
                           style={{ 
-                            color: progressPct > 50 ? '#ffffff' : '#1e3a8a',
+                            color: progressPct > 50 ? '#ffffff' : (isExceeded ? '#991b1b' : '#1e3a8a'),
                             fontSize: '0.72rem' 
                           }}
                         >

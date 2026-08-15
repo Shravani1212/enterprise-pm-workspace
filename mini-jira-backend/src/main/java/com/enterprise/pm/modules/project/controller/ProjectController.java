@@ -33,7 +33,7 @@ public class ProjectController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'DEVELOPER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(@Valid @RequestBody ProjectCreateRequest request,
                                                                        @AuthenticationPrincipal UserPrincipal currentUser) {
         return ResponseEntity.ok(ApiResponse.success("Project created successfully", projectService.createProject(request, currentUser)));
@@ -42,7 +42,12 @@ public class ProjectController {
     @GetMapping("/{id}/members")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> getProjectMembers(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(ApiResponse.success(projectService.getProjectMembers(id)));
+        List<ProjectMemberResponse> members = projectService.getProjectMembers(id);
+        System.out.println("GET /projects/" + id + "/members returned " + members.size() + " members");
+        for (ProjectMemberResponse m : members) {
+            System.out.println("  Member ID: " + m.id() + ", User: " + m.user().username() + ", Role: " + m.projectRole() + ", Active: " + m.active());
+        }
+        return ResponseEntity.ok(ApiResponse.success(members));
     }
 
     @PostMapping("/{id}/members")
@@ -50,7 +55,10 @@ public class ProjectController {
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<ProjectMemberResponse>> addProjectMember(@PathVariable("id") Long id,
                                                                                 @Valid @RequestBody AddMemberRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("Project member added successfully", projectService.addProjectMember(id, request)));
+        System.out.println("POST /projects/" + id + "/members adding user: " + request.userId() + " with role: " + request.roleCode());
+        ProjectMemberResponse response = projectService.addProjectMember(id, request);
+        System.out.println("  Saved member successfully. ID: " + response.id() + ", User: " + response.user().username() + ", Role: " + response.projectRole() + ", Active: " + response.active());
+        return ResponseEntity.ok(ApiResponse.success("Project member added successfully", response));
     }
 
     @PutMapping("/{id}")

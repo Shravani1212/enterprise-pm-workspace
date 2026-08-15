@@ -33,7 +33,7 @@ export const useTaskFiltersUrlSync = () => {
   );
 
   const resetFilters = useCallback(() => {
-    setSearchParams({}, { replace: true });
+    setSearchParams(new URLSearchParams(), { replace: true });
   }, [setSearchParams]);
 
   return { filters, setFilters, resetFilters };

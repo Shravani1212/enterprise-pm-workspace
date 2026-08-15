@@ -20,8 +20,10 @@ public class UserController {
     private final AuthService authService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-        return ResponseEntity.ok(ApiResponse.success(authService.getAllUsers()));
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(
+            @RequestParam(value = "role", required = false) String role
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(authService.getUsers(role)));
     }
 
     @PostMapping

@@ -30,6 +30,8 @@ export interface Project {
   updatedAt: string;
   version: number;
   members?: ProjectMember[];
+  taskCount?: number;
+  completedTaskCount?: number;
 }
 
 export interface ProjectMember {
@@ -38,6 +40,7 @@ export interface ProjectMember {
   user: User;
   projectRole: string;
   active: boolean;
+  lead?: User;
   joinedAt: string;
 }
 

@@ -18,7 +18,12 @@ import { ProfileModal } from './profile/ProfileModal';
 import { showConfirmAlert } from '../utils/alertUtils';
 import apiClient from '../services/apiClient';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { projectId } = useParams();
@@ -49,17 +54,23 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="bg-white border-end d-flex flex-column justify-between vh-100 sticky-top z-3" style={{ width: '260px', flexShrink: 0 }}>
+    <>
+      {/* Mobile Sidebar Backdrop */}
+      {isOpen && (
+        <div className="sidebar-backdrop d-lg-none" onClick={onClose} />
+      )}
+
+      <aside 
+        className={`bg-white border-end d-flex flex-column justify-between vh-100 sticky-top z-3 sidebar-responsive ${isOpen ? 'show' : ''}`} 
+        style={{ width: '260px', flexShrink: 0 }}
+      >
       <div>
         {/* Brand Header */}
-        <div className="p-4 border-bottom d-flex align-items-center gap-3">
-          <div className="rounded-3 bg-gradient-primary d-flex align-items-center justify-center text-white shadow-sm" style={{ width: '40px', height: '40px' }}>
-            <Layers className="h-5 w-5" style={{ width: '20px', height: '20px' }} />
-          </div>
-          <div>
-            <h1 className="h6 fw-bold mb-0 text-dark">ProjectPulse</h1>
-            <span className="badge badge-subtle-primary rounded-pill px-2 py-1" style={{ fontSize: '0.65rem' }}>
-              ProjectPulse v1.0
+        <div className="p-3.5 border-bottom d-flex align-items-center justify-content-center text-center">
+          <div className="d-flex flex-column align-items-center">
+            <img src="/assets/logo.png" alt="ProjectPulse Logo" style={{ height: '48px', objectFit: 'contain' }} className="mb-1" />
+            <span className="badge badge-subtle-primary rounded-pill px-2 py-0.5" style={{ fontSize: '0.62rem' }}>
+              Workspace v1.0
             </span>
           </div>
         </div>
@@ -87,6 +98,21 @@ export const Sidebar: React.FC = () => {
 
             <NavLink
               to="/projects"
+              end
+              className={({ isActive }) =>
+                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                }`
+              }
+            >
+              <Layers style={{ width: '18px', height: '18px' }} />
+              <span>Projects & Sprints</span>
+            </NavLink>
+
+            <NavLink
+              to={`/projects/${activeProjectId}/board${location.search}`}
               className={({ isActive }) =>
                 `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
                   isActive
@@ -96,22 +122,21 @@ export const Sidebar: React.FC = () => {
               }
             >
               <FolderKanban style={{ width: '18px', height: '18px' }} />
-              <span>Projects & Sprints</span>
+              <span>Kanban Board</span>
             </NavLink>
 
             <NavLink
-              to={`/projects/${activeProjectId}/board`}
-              className={({ isActive }) => {
-                const isProjectViewActive = isActive || location.pathname.includes('/gantt');
-                return `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isProjectViewActive
+              to={`/projects/${activeProjectId}/gantt${location.search}`}
+              className={({ isActive }) =>
+                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                  isActive
                     ? 'bg-gradient-primary text-white shadow-sm'
                     : 'text-secondary hover-bg-light'
-                }`;
-              }}
+                }`
+              }
             >
-              <Layers style={{ width: '18px', height: '18px' }} />
-              <span>Project Workspace</span>
+              <GanttChartSquare style={{ width: '18px', height: '18px' }} />
+              <span>Gantt Timeline</span>
             </NavLink>
 
             <NavLink
@@ -228,5 +253,6 @@ export const Sidebar: React.FC = () => {
         onClose={() => setIsProfileModalOpen(false)}
       />
     </aside>
+    </>
   );
 };
