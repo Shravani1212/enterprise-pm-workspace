@@ -282,6 +282,45 @@ public class AuthService {
         return getUsers(null);
     }
 
+    @Transactional
+    public UserResponse editUser(Long id, EditUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+
+        if (!user.getEmail().equalsIgnoreCase(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("Email is already registered by another user");
+        }
+
+        user.setEmail(request.email());
+        if (request.firstName() != null && !request.firstName().isBlank()) {
+            user.setFirstName(request.firstName());
+        }
+        if (request.lastName() != null && !request.lastName().isBlank()) {
+            user.setLastName(request.lastName());
+        }
+        if (request.status() != null && !request.status().isBlank()) {
+            user.setStatus(request.status());
+        }
+
+        if (request.roleCodes() != null && !request.roleCodes().isEmpty()) {
+            java.util.Set<Role> assignedRoles = new java.util.HashSet<>();
+            for (String code : request.roleCodes()) {
+                if (code != null && !code.isBlank()) {
+                    String cleanCode = code.replace("ROLE_", "");
+                    roleRepository.findByCode(cleanCode).ifPresent(assignedRoles::add);
+                    roleRepository.findByCode("ROLE_" + cleanCode).ifPresent(assignedRoles::add);
+                    roleRepository.findByCode(code).ifPresent(assignedRoles::add);
+                }
+            }
+            if (!assignedRoles.isEmpty()) {
+                user.setRoles(assignedRoles);
+            }
+        }
+
+        User savedUser = userRepository.save(user);
+        return UserMapper.toUserResponse(savedUser);
+    }
+
     private String hashToken(String rawToken) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

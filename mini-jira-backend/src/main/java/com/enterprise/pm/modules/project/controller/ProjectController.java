@@ -62,7 +62,7 @@ public class ProjectController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(@PathVariable("id") Long id,
                                                                        @Valid @RequestBody ProjectUpdateRequest request) {
@@ -70,7 +70,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @RequireProjectAccess(paramName = "id")
     public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable("id") Long id) {
         projectService.deleteProject(id);

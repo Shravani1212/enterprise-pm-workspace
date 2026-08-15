@@ -88,4 +88,15 @@ public class AuthDTOs {
 
         String newPassword
     ) {}
+
+    public record EditUserRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        String email,
+
+        String firstName,
+        String lastName,
+        String status,
+        Set<String> roleCodes
+    ) {}
 }

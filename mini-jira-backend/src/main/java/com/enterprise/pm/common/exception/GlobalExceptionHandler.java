@@ -92,10 +92,12 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
+        String userFriendlyMsg = "Please enter all required fields correctly: " + String.join(", ", errors.values());
+
         ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.UNPROCESSABLE_ENTITY.value(),
                 "VALIDATION_FAILED",
-                errors.toString(),
+                userFriendlyMsg,
                 request.getRequestURI()
         );
         return new ResponseEntity<>(response, HttpStatus.UNPROCESSABLE_ENTITY);
@@ -117,7 +119,7 @@ public class GlobalExceptionHandler {
         ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.BAD_REQUEST.value(),
                 "MALFORMED_JSON_REQUEST",
-                "Required request body is missing or malformed JSON payload.",
+                "Please enter all fields and try again.",
                 request.getRequestURI()
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -205,7 +207,7 @@ public class GlobalExceptionHandler {
         ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "INTERNAL_SERVER_ERROR",
-                "An unexpected server error occurred: " + ex.getMessage(),
+                "Something went wrong. Please try again.",
                 request.getRequestURI()
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);

@@ -21,7 +21,7 @@ export const useTaskFiltersUrlSync = () => {
     (newFilters: TaskFilterState) => {
       const params = new URLSearchParams();
 
-      if (newFilters.search.trim()) params.set('search', newFilters.search.trim());
+      if (newFilters.search) params.set('search', newFilters.search);
       if (newFilters.priorityId) params.set('priorityId', newFilters.priorityId);
       if (newFilters.statusId) params.set('statusId', newFilters.statusId);
       if (newFilters.assigneeId) params.set('assigneeId', newFilters.assigneeId);

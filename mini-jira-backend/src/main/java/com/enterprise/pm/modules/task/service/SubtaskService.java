@@ -9,6 +9,10 @@ import com.enterprise.pm.modules.task.entity.Task;
 import com.enterprise.pm.modules.task.mapper.TaskMapper;
 import com.enterprise.pm.modules.task.repository.SubtaskRepository;
 import com.enterprise.pm.modules.task.repository.TaskRepository;
+import com.enterprise.pm.security.UserPrincipal;
+import com.enterprise.pm.modules.project.repository.ProjectMemberRepository;
+import com.enterprise.pm.modules.auth.repository.UserRepository;
+import com.enterprise.pm.modules.auth.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -24,6 +28,8 @@ public class SubtaskService {
     private final SubtaskRepository subtaskRepository;
     private final TaskRepository taskRepository;
     private final FileStorageService fileStorageService;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<SubtaskResponse> getSubtasksByTaskId(Long taskId) {
@@ -33,9 +39,37 @@ public class SubtaskService {
     }
 
     @Transactional
-    public SubtaskResponse createSubtask(Long taskId, SubtaskCreateRequest request) {
+    public SubtaskResponse createSubtask(Long taskId, SubtaskCreateRequest request, UserPrincipal currentUser) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId));
+
+        Long projectId = task.getProject().getId();
+
+        // Verify that current user is an active member of this project (except Admin bypass)
+        boolean isMember = projectMemberRepository.existsByProjectIdAndUserIdAndActiveTrue(projectId, currentUser.getId());
+        boolean isAdmin = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isMember && !isAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("Forbidden: You are not a member of this project");
+        }
+
+        // Parse assignee developer from the title if present
+        String assignedUsername = extractSubtaskUsername(request.title());
+        if (assignedUsername != null) {
+            User devUser = userRepository.findByUsername(assignedUsername)
+                    .orElseThrow(() -> new IllegalArgumentException("Subtask assignee user not found: " + assignedUsername));
+
+            boolean isDevMember = projectMemberRepository.existsByProjectIdAndUserIdAndActiveTrue(projectId, devUser.getId());
+            if (!isDevMember) {
+                throw new IllegalArgumentException("Invalid Subtask Assignee: User is not a member of Project " + projectId);
+            }
+
+            boolean isDev = devUser.getRoles().stream().anyMatch(r ->
+                    r.getCode().equals("DEVELOPER") || r.getCode().equals("ROLE_DEVELOPER")
+            );
+            if (!isDev) {
+                throw new IllegalArgumentException("Subtask must be assigned to Developer role only");
+            }
+        }
 
         Subtask subtask = Subtask.builder()
                 .task(task)
@@ -48,9 +82,22 @@ public class SubtaskService {
     }
 
     @Transactional
-    public TaskResponse toggleSubtaskCompletion(Long subtaskId) {
+    public TaskResponse toggleSubtaskCompletion(Long subtaskId, UserPrincipal currentUser) {
         Subtask subtask = subtaskRepository.findById(subtaskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Subtask not found with ID: " + subtaskId));
+
+        // Enforce DEVELOPER assignment rule:
+        boolean isDev = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_DEVELOPER"));
+        boolean isLead = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_PROJECT_LEAD"));
+        boolean isPm = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_PROJECT_MANAGER"));
+        boolean isAdmin = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isDev && !isLead && !isPm && !isAdmin) {
+            String assignedUsername = extractSubtaskUsername(subtask.getTitle());
+            if (assignedUsername != null && !assignedUsername.equalsIgnoreCase(currentUser.getUsername())) {
+                throw new org.springframework.security.access.AccessDeniedException("Forbidden: Developers can only toggle status of subtasks assigned to them");
+            }
+        }
 
         subtask.setCompleted(!subtask.isCompleted());
         subtaskRepository.save(subtask);
@@ -59,6 +106,15 @@ public class SubtaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Parent task not found"));
 
         return TaskMapper.toTaskResponse(parentTask);
+    }
+
+    private String extractSubtaskUsername(String title) {
+        if (title == null) return null;
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("^\\[@([^\\]]+)\\]").matcher(title);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
     @Transactional

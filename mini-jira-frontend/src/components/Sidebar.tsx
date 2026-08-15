@@ -82,19 +82,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           </div>
 
           <nav className="nav nav-pills flex-column gap-1">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isActive
-                    ? 'bg-gradient-primary text-white shadow-sm'
-                    : 'text-secondary hover-bg-light'
-                }`
-              }
-            >
-              <LayoutDashboard style={{ width: '18px', height: '18px' }} />
-              <span>Role Dashboard</span>
-            </NavLink>
+            {!user?.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER') && (
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
+                    isActive
+                      ? 'bg-gradient-primary text-white shadow-sm'
+                      : 'text-secondary hover-bg-light'
+                  }`
+                }
+              >
+                <LayoutDashboard style={{ width: '18px', height: '18px' }} />
+                <span>Role Dashboard</span>
+              </NavLink>
+            )}
 
             <NavLink
               to="/projects"

@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import { ApiResponse, ProjectMember } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/alertUtils';
+import { getFriendlyError } from '../services/apiClient';
 import { formatDateDDMMYYYY } from '../utils/dateUtils';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import GlobalDataTable, { DataTableColumn } from '../components/common/GlobalDataTable';
@@ -86,7 +87,7 @@ export const ProjectMembersPage: React.FC = () => {
       setSelectedLeadId('');
       fetchMembers();
     } catch (err: any) {
-      showErrorAlert('Assignment Failed', err.response?.data?.error?.message || 'Failed to add members to project.');
+      showErrorAlert('Assignment Failed', getFriendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +106,7 @@ export const ProjectMembersPage: React.FC = () => {
         showSuccessAlert('Member Removed', `${member.user.firstName} removed from project.`);
         fetchMembers();
       } catch (err: any) {
-        showErrorAlert('Removal Failed', err.response?.data?.error?.message || 'Failed to remove member.');
+        showErrorAlert('Removal Failed', getFriendlyError(err));
       }
     }
   };

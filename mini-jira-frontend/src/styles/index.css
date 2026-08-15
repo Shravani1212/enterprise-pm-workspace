@@ -651,6 +651,33 @@ html, body, #root, .min-vh-100 {
   }
 }
 
+/* ── Global Checkbox Visibility Fix ─────────────────────────────────────────
+   Makes unchecked checkboxes clearly visible with a solid black border.
+   Checked state keeps the primary brand color fill.
+   ─────────────────────────────────────────────────────────────────────────── */
+.form-check-input[type="checkbox"] {
+  border: 2px solid #1e293b !important;
+  background-color: #ffffff !important;
+  border-radius: 4px !important;
+  width: 1em;
+  height: 1em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
 
+.form-check-input[type="checkbox"]:hover {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15) !important;
+}
 
+.form-check-input[type="checkbox"]:checked {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+}
+
+.form-check-input[type="checkbox"]:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+  border-color: #4f46e5 !important;
+  outline: none !important;
+}
 

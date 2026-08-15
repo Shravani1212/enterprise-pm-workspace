@@ -32,11 +32,14 @@ export const DashboardPage: React.FC = () => {
   const userRoles = currentUser?.roles || [];
   const isSystemAdmin = userRoles.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN');
   const isProjectManager = userRoles.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER');
+  const isProjectLead = userRoles.some(r => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD');
 
   const roleType = isSystemAdmin 
     ? 'ADMIN' 
     : isProjectManager 
     ? 'PROJECT_MANAGER' 
+    : isProjectLead
+    ? 'PROJECT_LEAD'
     : 'DEVELOPER';
 
   // Dynamic Data State
@@ -111,6 +114,15 @@ export const DashboardPage: React.FC = () => {
 
       {roleType === 'PROJECT_MANAGER' && (
         <ProjectManagerDynamicDashboard 
+          currentUser={currentUser} 
+          projects={projects} 
+          tasks={tasks} 
+          navigate={navigate} 
+        />
+      )}
+
+      {roleType === 'PROJECT_LEAD' && (
+        <ProjectLeadDynamicDashboard 
           currentUser={currentUser} 
           projects={projects} 
           tasks={tasks} 
@@ -639,6 +651,164 @@ const DeveloperDynamicDashboard: React.FC<{
                 <div key={p.id} className="p-3 rounded-3 bg-light border cursor-pointer hover-scale" onClick={() => navigate('/projects/1/board')}>
                   <div className="fw-bold text-dark small">{p.name}</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>Role: Developer</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================================
+   4. DYNAMIC PROJECT LEAD DASHBOARD VIEW
+   ============================================================================ */
+const ProjectLeadDynamicDashboard: React.FC<{
+  currentUser: User | null;
+  projects: Project[];
+  tasks: Task[];
+  navigate: any;
+}> = ({ currentUser, projects, tasks, navigate }) => {
+  const myAssignedTasks = tasks.filter(t => t.assignee?.id === currentUser?.id);
+  const completed = myAssignedTasks.filter(t => t.status?.code === 'DONE').length;
+  const subtasksCount = tasks.reduce((sum, t) => sum + (t.subtasks?.length || 0), 0);
+
+  return (
+    <div className="d-flex flex-column gap-4">
+      {/* Dynamic Header Banner */}
+      <div className="card border-0 rounded-4 p-4 text-white bg-gradient-dark-header shadow-md position-relative overflow-hidden">
+        <div className="d-flex align-items-center justify-content-between position-relative z-2">
+          <div>
+            <div className="badge bg-info bg-opacity-20 text-white rounded-pill px-3 py-1 mb-2 font-monospace small">
+              👑 PROJECT LEAD PORTAL
+            </div>
+            <h2 className="h3 fw-bold text-white mb-1">
+              Welcome back, Lead {currentUser?.firstName || ''}!
+            </h2>
+            <p className="text-light text-opacity-80 small mb-0">
+              Create subtasks, delegate to developers, and monitor sprint task progress.
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate('/projects/1/board')}
+            className="btn btn-light rounded-3 px-4 py-2.5 fw-semibold text-primary shadow-xs d-flex align-items-center gap-2 text-sm"
+          >
+            <FolderKanban style={{ width: '18px', height: '18px' }} />
+            <span>Go to Kanban Board</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic Metrics */}
+      <div className="row g-3">
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <span className="text-muted small uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Tasks Assigned</span>
+              <div className="rounded-3 bg-info bg-opacity-10 text-info p-2.5">
+                <FileText style={{ width: '22px', height: '22px' }} />
+              </div>
+            </div>
+            <div className="h2 fw-bold text-dark mb-1">{myAssignedTasks.length}</div>
+            <div className="text-primary fw-bold small" style={{ fontSize: '0.75rem' }}>Top-level tasks</div>
+          </div>
+        </div>
+
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <span className="text-muted small uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Subtasks Count</span>
+              <div className="rounded-3 bg-warning bg-opacity-10 text-warning p-2.5">
+                <Clock style={{ width: '22px', height: '22px' }} />
+              </div>
+            </div>
+            <div className="h2 fw-bold text-dark mb-1">{subtasksCount}</div>
+            <div className="text-warning fw-bold small" style={{ fontSize: '0.75rem' }}>Subtasks in project</div>
+          </div>
+        </div>
+
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <span className="text-muted small uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Completed Tasks</span>
+              <div className="rounded-3 bg-success bg-opacity-10 text-success p-2.5">
+                <CheckCircle2 style={{ width: '22px', height: '22px' }} />
+              </div>
+            </div>
+            <div className="h2 fw-bold text-dark mb-1">{completed}</div>
+            <div className="text-success fw-bold small" style={{ fontSize: '0.75rem' }}>Finished items</div>
+          </div>
+        </div>
+
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <span className="text-muted small uppercase fw-bold" style={{ fontSize: '0.7rem' }}>My Projects</span>
+              <div className="rounded-3 bg-primary bg-opacity-10 text-primary p-2.5">
+                <Zap style={{ width: '22px', height: '22px' }} />
+              </div>
+            </div>
+            <div className="h2 fw-bold text-dark mb-1">{projects.length}</div>
+            <div className="text-primary fw-bold small" style={{ fontSize: '0.75rem' }}>Assigned projects</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Assigned Tasks */}
+      <div className="row g-4">
+        <div className="col-12 col-lg-8">
+          <GlobalDataTable<Task>
+            id="lead-dashboard-tasks-table"
+            title="My Assigned Tasks"
+            columns={[
+              {
+                key: 'title',
+                label: 'Task Title',
+                render: (t) => <span className="fw-bold text-dark small">{t.title}</span>,
+              },
+              {
+                key: 'priority.name',
+                label: 'Priority',
+                render: (t) => (
+                  <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 small">
+                    {t.priority?.name || 'MEDIUM'}
+                  </span>
+                ),
+              },
+              {
+                key: 'status.name',
+                label: 'Status',
+                render: (t) => (
+                  <span className="badge bg-warning bg-opacity-10 text-warning px-2 small">
+                    {t.status?.name || 'IN_PROGRESS'}
+                  </span>
+                ),
+              },
+              {
+                key: 'subtasksCount',
+                label: 'Subtasks',
+                render: (t) => <span className="text-muted small">{(t.subtasks?.length || 0)} subtasks</span>,
+              },
+            ] as DataTableColumn<Task>[]}
+            data={myAssignedTasks}
+            exportFileName="lead_assigned_tasks"
+          />
+        </div>
+
+        {/* Dynamic Assigned Projects List */}
+        <div className="col-12 col-lg-4">
+          <div className="card card-glass border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+            <div className="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
+              <h5 className="h6 fw-bold text-dark mb-0">My Projects</h5>
+              <span className="badge badge-subtle-success rounded-pill px-2.5 py-1 small">{projects.length} Projects</span>
+            </div>
+
+            <div className="d-flex flex-column gap-2.5">
+              {projects.map(p => (
+                <div key={p.id} className="p-3 rounded-3 bg-light border cursor-pointer hover-scale" onClick={() => navigate('/projects/1/board')}>
+                  <div className="fw-bold text-dark small">{p.name}</div>
+                  <div className="text-muted" style={{ fontSize: '0.72rem' }}>Role: Project Lead</div>
                 </div>
               ))}
             </div>

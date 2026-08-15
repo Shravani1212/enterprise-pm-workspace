@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
 import { ApiResponse, UserResponse } from '../../types';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alertUtils';
+import { getFriendlyError } from '../../services/apiClient';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
         onClose();
       }
     } catch (err: any) {
-      showErrorAlert('Update Failed', err.response?.data?.error?.message || 'Failed to update profile.');
+      showErrorAlert('Update Failed', getFriendlyError(err));
     } finally {
       setLoading(false);
     }

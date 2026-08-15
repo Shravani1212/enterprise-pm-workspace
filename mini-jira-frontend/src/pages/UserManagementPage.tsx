@@ -4,6 +4,7 @@ import apiClient from '../services/apiClient';
 import { ApiResponse, User, ProjectResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert } from '../utils/alertUtils';
+import { getFriendlyError } from '../services/apiClient';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import GlobalDataTable, { DataTableColumn } from '../components/common/GlobalDataTable';
 
@@ -25,6 +26,16 @@ export const UserManagementPage: React.FC = () => {
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Edit User Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editEmail, setEditEmail] = useState('');
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editRoleCode, setEditRoleCode] = useState('DEVELOPER');
+  const [editStatus, setEditStatus] = useState('ACTIVE');
+  const [editingSubmitting, setEditingSubmitting] = useState(false);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -44,6 +55,62 @@ export const UserManagementPage: React.FC = () => {
       const res = await apiClient.get<ApiResponse<ProjectResponse[]>>('/projects');
       if (res.data.success && res.data.data) setProjects(res.data.data);
     } catch { }
+  };
+
+  const handleEditUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditingSubmitting(true);
+    try {
+      const res = await apiClient.put<ApiResponse<any>>(`/users/${editingUser.id}`, {
+        email: editEmail,
+        firstName: editFirstName,
+        lastName: editLastName,
+        status: editStatus,
+        roleCodes: [editRoleCode],
+      });
+
+      if (res.data.success) {
+        showSuccessAlert('User Updated', `User @${editingUser.username} updated successfully.`);
+        setIsEditModalOpen(false);
+        setEditingUser(null);
+        fetchUsers();
+      }
+    } catch (err: any) {
+      showErrorAlert('User Edit Failed', getFriendlyError(err));
+    } finally {
+      setEditingSubmitting(false);
+    }
+  };
+
+  const handleToggleUserStatus = async (userToToggle: User) => {
+    try {
+      const newStatus = userToToggle.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
+      const res = await apiClient.put<ApiResponse<any>>(`/users/${userToToggle.id}`, {
+        email: userToToggle.email,
+        firstName: userToToggle.firstName,
+        lastName: userToToggle.lastName,
+        status: newStatus,
+        roleCodes: userToToggle.roles,
+      });
+
+      if (res.data.success) {
+        showSuccessAlert('Status Toggled', `User @${userToToggle.username} status updated to ${newStatus}.`);
+        fetchUsers();
+      }
+    } catch (err: any) {
+      showErrorAlert('Toggle Failed', getFriendlyError(err));
+    }
+  };
+
+  const openEditModal = (selectedUser: User) => {
+    setEditingUser(selectedUser);
+    setEditEmail(selectedUser.email || '');
+    setEditFirstName(selectedUser.firstName || '');
+    setEditLastName(selectedUser.lastName || '');
+    setEditStatus(selectedUser.status || 'ACTIVE');
+    setEditRoleCode(selectedUser.roles?.[0] || 'DEVELOPER');
+    setIsEditModalOpen(true);
   };
 
   useEffect(() => {
@@ -99,7 +166,7 @@ export const UserManagementPage: React.FC = () => {
         fetchUsers();
       }
     } catch (err: any) {
-      showErrorAlert('User Creation Failed', err.response?.data?.error?.message || 'Failed to create user.');
+      showErrorAlert('User Creation Failed', getFriendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -111,6 +178,9 @@ export const UserManagementPage: React.FC = () => {
     }
     if (roles.includes('PROJECT_MANAGER') || roles.includes('ROLE_PROJECT_MANAGER')) {
       return 'bg-warning bg-opacity-10 text-warning border-warning border-opacity-25';
+    }
+    if (roles.includes('PROJECT_LEAD') || roles.includes('ROLE_PROJECT_LEAD')) {
+      return 'bg-info bg-opacity-10 text-info border-info border-opacity-25';
     }
     return 'bg-primary bg-opacity-10 text-primary border-primary border-opacity-25';
   };
@@ -165,11 +235,33 @@ export const UserManagementPage: React.FC = () => {
     {
       key: 'status',
       label: 'Status',
-      // This field doesn't exist on User, but render overrides it
-      render: () => (
-        <span className="badge badge-subtle-success rounded-pill px-2 py-1 small">Active</span>
+      render: (u) => (
+        <span className={`badge border rounded-pill px-2 py-1 small text-uppercase fw-semibold ${u.status === 'INACTIVE' ? 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25' : 'bg-success bg-opacity-10 text-success border-success border-opacity-25'}`}>
+          {u.status || 'ACTIVE'}
+        </span>
       ),
-      noExport: false,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (u) => (
+        <div className="d-flex gap-2">
+          <button
+            onClick={() => openEditModal(u)}
+            className="btn btn-xs btn-outline-secondary px-2 py-1 rounded-3 text-xs"
+            style={{ fontSize: '0.75rem' }}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleToggleUserStatus(u)}
+            className={`btn btn-xs px-2 py-1 rounded-3 text-xs ${u.status === 'INACTIVE' ? 'btn-outline-success' : 'btn-outline-danger'}`}
+            style={{ fontSize: '0.75rem' }}
+          >
+            {u.status === 'INACTIVE' ? 'Activate' : 'Deactivate'}
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -357,6 +449,99 @@ export const UserManagementPage: React.FC = () => {
                   >
                     <CheckCircle2 style={{ width: '16px', height: '16px' }} />
                     <span>{submitting ? 'Creating User...' : 'Provision User'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit User Modal */}
+      {isEditModalOpen && editingUser && (
+        <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+              <div className="modal-header bg-gradient-dark-header text-white border-0 px-4 py-3">
+                <h5 className="modal-title fw-bold text-white mb-0" style={{ fontSize: '1rem' }}>Edit System User @{editingUser.username}</h5>
+                <button onClick={() => { setIsEditModalOpen(false); setEditingUser(null); }} className="btn-close btn-close-white shadow-none"></button>
+              </div>
+
+              <form onSubmit={handleEditUserSubmit} className="modal-body p-4">
+                <div className="row g-3 mb-3">
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>First Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Last Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Global Role</label>
+                  <select
+                    value={editRoleCode}
+                    onChange={(e) => setEditRoleCode(e.target.value)}
+                    className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm"
+                  >
+                    <option value="DEVELOPER">Developer (Sprint &amp; Task execution)</option>
+                    <option value="PROJECT_LEAD">Project Lead (Task creation &amp; developer assignment)</option>
+                    <option value="PROJECT_MANAGER">Project Manager (Sprint creation &amp; project control)</option>
+                    <option value="ADMIN">System Administrator (Full access)</option>
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>Account Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE (Disabled)</option>
+                  </select>
+                </div>
+
+                <div className="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditModalOpen(false); setEditingUser(null); }}
+                    className="btn btn-sm btn-light fw-semibold text-secondary px-3 rounded-3"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editingSubmitting}
+                    className="btn btn-sm btn-primary bg-gradient-primary border-0 fw-semibold text-white px-4 rounded-3 d-flex align-items-center gap-2 shadow-sm"
+                  >
+                    <CheckCircle2 style={{ width: '16px', height: '16px' }} />
+                    <span>{editingSubmitting ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                 </div>
               </form>

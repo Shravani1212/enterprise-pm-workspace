@@ -173,8 +173,8 @@ function GlobalDataTable<T extends Record<string, any>>({
 
   // ── Filtered data (searches every column's plain-text value) ──────────────
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return data;
+    const q = query.toLowerCase();
+    if (!q.trim()) return data;
     return data.filter((row) =>
       columns.some((col) => getCellText(row, col.key).toLowerCase().includes(q))
     );

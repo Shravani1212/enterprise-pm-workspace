@@ -115,7 +115,19 @@ export const LoginPage: React.FC = () => {
       if (res.data.success && res.data.data) {
         login(res.data.data);
         showSuccessAlert(`Welcome to ${themeConfig.portalName}!`, `Signed in as ${res.data.data.user.username}`);
-        navigate('/dashboard');
+        
+        const roles = res.data.data.user.roles || [];
+        const hasHigherRole = roles.some(r => 
+          r === 'ADMIN' || r === 'ROLE_ADMIN' || 
+          r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER' ||
+          r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD'
+        );
+        
+        if (!hasHigherRole && roles.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER')) {
+          navigate('/projects');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       const msg = err.response?.data?.error?.message || 'Login failed. Please check your credentials.';

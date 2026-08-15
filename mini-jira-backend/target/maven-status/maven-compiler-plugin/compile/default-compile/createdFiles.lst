@@ -37,6 +37,7 @@ com\enterprise\pm\modules\auth\entity\Role$RoleBuilder.class
 com\enterprise\pm\modules\project\repository\ProjectRepository.class
 com\enterprise\pm\modules\task\dto\TaskDTOs.class
 com\enterprise\pm\common\storage\FileStorageService.class
+com\enterprise\pm\modules\auth\dto\AuthDTOs$EditUserRequest.class
 com\enterprise\pm\modules\project\repository\ProjectMemberRepository.class
 com\enterprise\pm\modules\metadata\dto\MetadataDTOs.class
 com\enterprise\pm\modules\metadata\repository\PriorityRepository.class

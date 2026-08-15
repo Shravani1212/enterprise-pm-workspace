@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useQueryClient } from '@tanstack/react-query';
 import { Task, Subtask } from '../../types';
 import { 
   GripVertical,
@@ -28,8 +29,15 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardClick, onTaskUpdated }) => {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') ?? false;
+  const isPm = user?.roles?.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') ?? false;
+  const isLead = user?.roles?.some(r => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') ?? false;
+  const isDev = user?.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER') ?? false;
+  
+  const isAssignedToMe = initialTask.assignee?.username && user?.username && initialTask.assignee.username.toLowerCase() === user.username.toLowerCase();
+  const canDrag = !isAdmin && (isPm || isLead || (isDev && isAssignedToMe));
   const [task, setTask] = useState<Task>(initialTask);
   const [isExpanded, setIsExpanded] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -69,7 +77,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id.toString() });
+  } = useSortable({ id: task.id.toString(), disabled: !canDrag });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -115,6 +123,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
         const updated = res.data.data;
         setTask(updated);
         onTaskUpdated?.(updated);
+        queryClient.setQueriesData({ queryKey: ['projects', String(task.projectId), 'tasks'] }, (oldData: any) => {
+          if (!Array.isArray(oldData)) return oldData;
+          return oldData.map((t: Task) => (t.id === updated.id ? updated : t));
+        });
       }
     } catch (err) {
       console.error('Failed to toggle subtask', err);
@@ -166,6 +178,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
         }
         setTask(updatedTask);
         onTaskUpdated?.(updatedTask);
+        queryClient.setQueriesData({ queryKey: ['projects', String(task.projectId), 'tasks'] }, (oldData: any) => {
+          if (!Array.isArray(oldData)) return oldData;
+          return oldData.map((t: Task) => (t.id === updatedTask.id ? updatedTask : t));
+        });
         setNewSubtaskTitle('');
         setAssigneeDevId('');
         setSubtaskEstHours(0);
@@ -186,6 +202,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
       if (res.data?.success && res.data?.data) {
         setTask(res.data.data);
         onTaskUpdated?.(res.data.data);
+        queryClient.setQueriesData({ queryKey: ['projects', String(task.projectId), 'tasks'] }, (oldData: any) => {
+          if (!Array.isArray(oldData)) return oldData;
+          return oldData.map((t: Task) => (t.id === res.data.data.id ? res.data.data : t));
+        });
       }
     } catch (err) {
       console.error('Failed to delete subtask', err);
@@ -274,14 +294,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
   // PROJECT_MANAGER: full task management (edit, add/delete subtasks, assign)
   // PROJECT_LEAD  : manage subtasks + assign developers
   // DEVELOPER     : toggle own subtask completion; no add/delete
-  const isPm   = user?.roles?.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') ?? false;
-  const isLead = user?.roles?.some(r => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') ?? false;
-  const isDev  = user?.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER') ?? false;
 
-  // Who can add/delete subtasks: Project Lead only (PM is view-only)
-  const canManageSubtasks = isLead;
-  // Who can toggle subtask completion: Lead + Developer
-  const canToggleSubtask  = isLead || isDev;
+  // Who can add/delete subtasks: Project Manager + Project Lead
+  const canManageSubtasks = isPm || isLead || isAdmin;
+  // Who can toggle subtask completion: PM + Lead + Developer + Admin
+  const canToggleSubtask  = isPm || isLead || isDev || isAdmin;
   // Who can open the full edit modal: PM only (and Admin is read-only)
   const canEditTask = isPm;
 
@@ -301,8 +318,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
       {/* Top Header Row: Drag Handle + Title + Priority Pill Badge */}
       <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
         <div className="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-          {/* Drag Grip Handle — hidden for admins (view-only) */}
-          {!isAdmin && (
+          {/* Drag Grip Handle — hidden if user cannot drag */}
+          {canDrag && (
             <div
               {...attributes}
               {...listeners}
@@ -532,7 +549,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
 
                       const parsed = parseSubtaskTitle(st.title);
                       const isAssignedToCurrentUser = parsed.username && user?.username && parsed.username.toLowerCase() === user.username.toLowerCase();
-                      const canUserToggleThisSubtask = isLead || (isDev && isAssignedToCurrentUser);
+                      const canUserToggleThisSubtask = isPm || isAdmin || isLead || (isDev && isAssignedToCurrentUser);
 
                       return (
                         <div

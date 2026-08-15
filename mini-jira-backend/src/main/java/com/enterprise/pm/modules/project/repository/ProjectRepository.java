@@ -16,6 +16,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     boolean existsByCode(String code);
 
-    @Query("SELECT DISTINCT p FROM Project p LEFT JOIN ProjectMember pm ON pm.project = p WHERE (pm.user.id = :userId AND pm.active = true) OR p.createdBy.id = :userId")
+    @Query("SELECT DISTINCT p FROM Project p JOIN ProjectMember pm ON pm.project = p WHERE pm.user.id = :userId AND pm.active = true")
     List<Project> findProjectsByUserId(@Param("userId") Long userId);
 }

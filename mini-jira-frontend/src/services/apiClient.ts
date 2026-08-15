@@ -1,6 +1,32 @@
 import axios from 'axios';
 import { ApiResponse, AuthResponse } from '../types';
 
+/** Translates an axios error into a clean user-friendly message */
+export function getFriendlyError(err: any): string {
+  const status = err?.response?.status;
+  const backendMsg = err?.response?.data?.error?.message || err?.response?.data?.message;
+
+  // Use backend's own user-friendly message if available
+  if (backendMsg && !backendMsg.toLowerCase().includes('exception') && !backendMsg.toLowerCase().includes('stack')) {
+    return backendMsg;
+  }
+
+  switch (status) {
+    case 400: return 'Please check your input and try again.';
+    case 401: return 'Your session has expired. Please log in again.';
+    case 403: return 'You do not have permission to perform this action.';
+    case 404: return 'The requested resource was not found.';
+    case 409: return 'A conflict occurred. This record may already exist.';
+    case 422: return 'Please enter all required fields correctly.';
+    case 429: return 'Too many requests. Please wait a moment and try again.';
+    case 500: return 'Something went wrong on our end. Please try again.';
+    case 502:
+    case 503:
+    case 504: return 'The server is temporarily unavailable. Please try again shortly.';
+    default:  return 'Something went wrong. Please try again.';
+  }
+}
+
 const apiClient = axios.create({
   baseURL: '/api/v1',
   withCredentials: true, // Automatically includes HttpOnly cookies on every request
@@ -32,6 +58,9 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
       }
     }
+
+    // Attach friendly message to error so callers can use err.friendlyMessage
+    error.friendlyMessage = getFriendlyError(error);
     return Promise.reject(error);
   }
 );

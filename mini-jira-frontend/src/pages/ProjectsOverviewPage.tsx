@@ -21,6 +21,7 @@ import apiClient from '../services/apiClient';
 import { ApiResponse, ProjectResponse, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../utils/alertUtils';
+import { getFriendlyError } from '../services/apiClient';
 import { formatDateDDMMYYYY, getTodayLocalStr, getFutureLocalStr } from '../utils/dateUtils';
 import { DashboardCalendar } from '../components/dashboard/DashboardCalendar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -110,10 +111,10 @@ export const ProjectsOverviewPage: React.FC = () => {
 
   // Only Admin can create / edit / delete projects
   const canManageProjects = isAdmin;
-  // Admin + Lead can plan sprints
-  const canPlanSprint = isAdmin || isLead;
-  // PM can assign members to projects
-  const canAssignMembers = isPm;
+  // Only ADMIN can plan sprints — Developers and Project Leads cannot
+  const canPlanSprint = isAdmin;
+  // Only ADMIN can assign members to projects (including assigning PM)
+  const canAssignMembers = isAdmin;
   // Legacy alias kept for member-management pages
   const isAdminOrPm = isAdmin || isPm || isLead;
 
@@ -196,7 +197,7 @@ export const ProjectsOverviewPage: React.FC = () => {
         fetchData();
       }
     } catch (err: any) {
-      showErrorAlert('Creation Failed', err.response?.data?.error?.message || 'Failed to create project.');
+      showErrorAlert('Creation Failed', getFriendlyError(err));
     }
   };
 
@@ -228,7 +229,7 @@ export const ProjectsOverviewPage: React.FC = () => {
         fetchData();
       }
     } catch (err: any) {
-      showErrorAlert('Update Failed', err.response?.data?.error?.message || 'Failed to update project.');
+      showErrorAlert('Update Failed', getFriendlyError(err));
     }
   };
 
@@ -244,7 +245,7 @@ export const ProjectsOverviewPage: React.FC = () => {
         showSuccessAlert('Project Deleted', `Project "${project.name}" has been removed.`);
         fetchData();
       } catch (err: any) {
-        showErrorAlert('Delete Failed', err.response?.data?.error?.message || 'Failed to delete project.');
+        showErrorAlert('Delete Failed', getFriendlyError(err));
       }
     }
   };
@@ -281,12 +282,12 @@ export const ProjectsOverviewPage: React.FC = () => {
       .map((m) => m.user.id);
   };
 
-  // PM: Open Assign Members Modal
+  // Admin: Open Assign Members Modal
   const handleOpenAssignMembers = (project: ProjectResponse) => {
     setSelectedProject(project);
-    const initialUserIds = getAlreadyAssignedUserIds(project, 'PROJECT_LEAD');
+    const initialUserIds = getAlreadyAssignedUserIds(project, 'PROJECT_MANAGER');
     setSelectedUserIds(initialUserIds);
-    setAssignRoleCode('PROJECT_LEAD');
+    setAssignRoleCode('PROJECT_MANAGER');
 
     // Initialize developerLeadMap
     const initialLeadMap: Record<number, number> = {};
@@ -363,7 +364,7 @@ export const ProjectsOverviewPage: React.FC = () => {
         );
       }
     } catch (err: any) {
-      showErrorAlert('Sync Failed', err.response?.data?.error?.message || 'Failed to update member assignments.');
+      showErrorAlert('Sync Failed', getFriendlyError(err));
     } finally {
       setAssigning(false);
       setIsAssignModalOpen(false);
@@ -1020,6 +1021,7 @@ export const ProjectsOverviewPage: React.FC = () => {
                     }}
                     className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
                   >
+                    <option value="PROJECT_MANAGER">PROJECT MANAGER</option>
                     <option value="PROJECT_LEAD">PROJECT LEAD</option>
                     <option value="DEVELOPER">DEVELOPER</option>
                   </select>
@@ -1068,8 +1070,8 @@ export const ProjectsOverviewPage: React.FC = () => {
                                       [u.id]: val ? Number(val) : 0
                                     }));
                                   }}
-                                  className="form-select form-select-xs bg-white rounded-2 shadow-none py-0.5 text-xs text-dark"
-                                  style={{ width: 'auto', minWidth: '120px', fontSize: '0.65rem', height: '22px' }}
+                                  className="form-select bg-white rounded-2 shadow-none text-xs text-dark"
+                                  style={{ width: 'auto', minWidth: '120px', fontSize: '0.75rem', height: '30px', padding: '2px 24px 2px 8px' }}
                                 >
                                   <option value="">Select Lead...</option>
                                   {(selectedProject.members || [])

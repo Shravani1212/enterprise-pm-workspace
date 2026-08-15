@@ -66,9 +66,41 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<TaskResponse> searchTasks(Long projectId, String search, Long priorityId, Long statusId, Long assigneeId, Long labelId) {
-        org.springframework.data.jpa.domain.Specification<Task> spec = 
-                com.enterprise.pm.modules.task.specification.TaskSpecification.filterTasks(projectId, search, priorityId, statusId, assigneeId, labelId);
-        return taskRepository.findAll(spec).stream()
+        // Fetch all tasks with full JOIN FETCH (ensures subtasks, assignee, priority, labels are loaded)
+        List<Task> allTasks = taskRepository.findAllByProjectIdWithDetails(projectId);
+
+        String q = (search != null) ? search.trim().toLowerCase() : "";
+
+        return allTasks.stream()
+                .filter(task -> {
+                    // Search: match title, description, or any subtask title
+                    if (!q.isEmpty()) {
+                        boolean titleMatch = task.getTitle() != null && task.getTitle().toLowerCase().contains(q);
+                        boolean descMatch  = task.getDescription() != null && task.getDescription().toLowerCase().contains(q);
+                        boolean subtaskMatch = task.getSubtasks() != null && task.getSubtasks().stream()
+                                .anyMatch(st -> st.getTitle() != null && st.getTitle().toLowerCase().contains(q));
+                        if (!titleMatch && !descMatch && !subtaskMatch) return false;
+                    }
+                    // Priority filter
+                    if (priorityId != null && (task.getPriority() == null || !task.getPriority().getId().equals(priorityId))) {
+                        return false;
+                    }
+                    // Status filter
+                    if (statusId != null && (task.getStatus() == null || !task.getStatus().getId().equals(statusId))) {
+                        return false;
+                    }
+                    // Assignee filter
+                    if (assigneeId != null && (task.getAssignee() == null || !task.getAssignee().getId().equals(assigneeId))) {
+                        return false;
+                    }
+                    // Label filter
+                    if (labelId != null) {
+                        boolean hasLabel = task.getLabels() != null &&
+                                task.getLabels().stream().anyMatch(l -> l.getId().equals(labelId));
+                        if (!hasLabel) return false;
+                    }
+                    return true;
+                })
                 .map(TaskMapper::toTaskResponse)
                 .toList();
     }
@@ -101,8 +133,16 @@ public class TaskService {
             if (!isAssigneeMember) {
                 throw new IllegalArgumentException("Invalid Assignee: Selected user ID " + request.assigneeId() + " is not an active member of Project " + projectId);
             }
-            assignee = userRepository.findById(request.assigneeId())
+            User assigneeUser = userRepository.findById(request.assigneeId())
                     .orElseThrow(() -> new ResourceNotFoundException("Assignee user not found"));
+            boolean isInvalidRole = assigneeUser.getRoles().stream().anyMatch(r ->
+                    r.getCode().equals("ADMIN") || r.getCode().equals("ROLE_ADMIN") ||
+                    r.getCode().equals("PROJECT_MANAGER") || r.getCode().equals("ROLE_PROJECT_MANAGER")
+            );
+            if (isInvalidRole) {
+                throw new IllegalArgumentException("Tasks cannot be assigned to Administrator or Project Manager roles");
+            }
+            assignee = assigneeUser;
         }
 
         Set<Label> labels = new HashSet<>();
@@ -161,9 +201,16 @@ public class TaskService {
             if (!isAssigneeMember) {
                 throw new IllegalArgumentException("Invalid Assignee: User is not an active member of this project");
             }
-            User assignee = userRepository.findById(request.assigneeId())
+            User assigneeUser = userRepository.findById(request.assigneeId())
                     .orElseThrow(() -> new ResourceNotFoundException("Assignee user not found"));
-            task.setAssignee(assignee);
+            boolean isInvalidRole = assigneeUser.getRoles().stream().anyMatch(r ->
+                    r.getCode().equals("ADMIN") || r.getCode().equals("ROLE_ADMIN") ||
+                    r.getCode().equals("PROJECT_MANAGER") || r.getCode().equals("ROLE_PROJECT_MANAGER")
+            );
+            if (isInvalidRole) {
+                throw new IllegalArgumentException("Tasks cannot be assigned to Administrator or Project Manager roles");
+            }
+            task.setAssignee(assigneeUser);
         }
 
         if (request.startDate() != null) task.setStartDate(request.startDate());
@@ -184,9 +231,21 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse patchTaskStatus(Long taskId, Long statusId, String delayReason) {
+    public TaskResponse patchTaskStatus(Long taskId, Long statusId, String delayReason, UserPrincipal currentUser) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId));
+
+        // Enforce DEVELOPER assignment rule:
+        boolean isDev = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_DEVELOPER"));
+        boolean isLead = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_PROJECT_LEAD"));
+        boolean isPm = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_PROJECT_MANAGER"));
+        boolean isAdmin = currentUser.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isDev && !isLead && !isPm && !isAdmin) {
+            if (task.getAssignee() == null || !task.getAssignee().getId().equals(currentUser.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Forbidden: Developers can only update status of tasks assigned to them");
+            }
+        }
 
         TaskStatus status = taskStatusRepository.findById(statusId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task status not found"));
@@ -209,9 +268,16 @@ public class TaskService {
             if (!isMember) {
                 throw new IllegalArgumentException("Invalid Assignee: User is not a member of Project " + task.getProject().getId());
             }
-            User assignee = userRepository.findById(assigneeId)
+            User assigneeUser = userRepository.findById(assigneeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Assignee user not found"));
-            task.setAssignee(assignee);
+            boolean isInvalidRole = assigneeUser.getRoles().stream().anyMatch(r ->
+                    r.getCode().equals("ADMIN") || r.getCode().equals("ROLE_ADMIN") ||
+                    r.getCode().equals("PROJECT_MANAGER") || r.getCode().equals("ROLE_PROJECT_MANAGER")
+            );
+            if (isInvalidRole) {
+                throw new IllegalArgumentException("Tasks cannot be assigned to Administrator or Project Manager roles");
+            }
+            task.setAssignee(assigneeUser);
         } else {
             task.setAssignee(null);
         }

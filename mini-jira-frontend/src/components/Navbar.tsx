@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Bell, Sparkles, Plus, Sun, Moon, Menu } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -11,6 +11,12 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onNewTaskClick, onToggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
+  const [localSearch, setLocalSearch] = useState(searchValue || '');
+
+  const handleSearch = (val: string) => {
+    setLocalSearch(val);
+    onSearchChange?.(val);
+  };
 
   return (
     <header className="navbar navbar-expand bg-white border-bottom px-4 py-2 sticky-top shadow-sm z-3" style={{ height: '64px' }}>
@@ -33,9 +39,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onN
           <input
             type="text"
             placeholder="Search tasks, assignees, or labels..."
-            value={searchValue || ''}
-            onChange={(e) => onSearchChange?.(e.target.value)}
+            value={localSearch}
+            onChange={(e) => handleSearch(e.target.value)}
             className="form-control form-control-sm bg-light border-start-0 rounded-end-3 text-sm shadow-none"
+            style={{ color: '#0f172a' }}
           />
           </div>
         </div>

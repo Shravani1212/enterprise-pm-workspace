@@ -1,8 +1,7 @@
 package com.enterprise.pm.modules.auth.controller;
 
 import com.enterprise.pm.common.api.ApiResponse;
-import com.enterprise.pm.modules.auth.dto.AuthDTOs.RegisterRequest;
-import com.enterprise.pm.modules.auth.dto.AuthDTOs.UserResponse;
+import com.enterprise.pm.modules.auth.dto.AuthDTOs.*;
 import com.enterprise.pm.modules.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +26,19 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ROLE_ADMIN', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody RegisterRequest request) {
         UserResponse user = authService.register(request);
         return ResponseEntity.ok(ApiResponse.success("User created successfully", user));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> editUser(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody EditUserRequest request
+    ) {
+        UserResponse user = authService.editUser(id, request);
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", user));
     }
 }

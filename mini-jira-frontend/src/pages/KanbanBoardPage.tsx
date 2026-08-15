@@ -11,7 +11,8 @@ import { useDebounce } from '../hooks/useDebounce';
 import { ToastContainer } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessAlert, showErrorAlert } from '../utils/alertUtils';
-import { RefreshCw, Plus, X, Edit3, Clock, FileText, CheckCircle2 } from 'lucide-react';
+import { getFriendlyError } from '../services/apiClient';
+import { RefreshCw, Plus, X, Edit3, Clock, FileText, CheckCircle2, FolderKanban, ChevronDown } from 'lucide-react';
 
 export const KanbanBoardPage: React.FC = () => {
   const { projectId } = useParams();
@@ -100,6 +101,13 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
+  // Derive stable filter values for queryKey and queryFn
+  const searchTerm   = debouncedSearch.trim();
+  const priorityVal  = filters.priorityId;
+  const statusVal    = filters.statusId;
+  const assigneeVal  = filters.assigneeId;
+  const labelVal     = filters.labelId;
+
   // 7. Search & Filtered Tasks API Query with keepPreviousData for smooth inline card reloading
   const { data: tasksData, isFetching: isTasksFetching, refetch: refetchTasks } = useQuery({
     queryKey: [
@@ -107,19 +115,19 @@ export const KanbanBoardPage: React.FC = () => {
       activeProjectId,
       'tasks',
       'search',
-      debouncedSearch,
-      filters.priorityId,
-      filters.statusId,
-      filters.assigneeId,
-      filters.labelId,
+      searchTerm,
+      priorityVal,
+      statusVal,
+      assigneeVal,
+      labelVal,
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (debouncedSearch) params.set('search', debouncedSearch);
-      if (filters.priorityId) params.set('priorityId', filters.priorityId);
-      if (filters.statusId) params.set('statusId', filters.statusId);
-      if (filters.assigneeId) params.set('assigneeId', filters.assigneeId);
-      if (filters.labelId) params.set('labelId', filters.labelId);
+      if (searchTerm)   params.set('search',     searchTerm);
+      if (priorityVal)  params.set('priorityId', priorityVal);
+      if (statusVal)    params.set('statusId',   statusVal);
+      if (assigneeVal)  params.set('assigneeId', assigneeVal);
+      if (labelVal)     params.set('labelId',    labelVal);
 
       const queryString = params.toString();
       const url = queryString
@@ -286,7 +294,7 @@ export const KanbanBoardPage: React.FC = () => {
         }
       }
     } catch (err: any) {
-      showErrorAlert('Save Failed', err.response?.data?.error?.message || 'Failed to save task.');
+      showErrorAlert('Save Failed', getFriendlyError(err));
     } finally {
       setSavingTask(false);
     }
@@ -312,7 +320,7 @@ export const KanbanBoardPage: React.FC = () => {
       {/* View Header Bar with Dual-View Toggle */}
       <div className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
         <div>
-          <div className="d-flex align-items-center gap-3 mb-1">
+          <div className="d-flex align-items-center gap-3 mb-1 flex-wrap">
             <h2 className="h4 fw-bold text-dark mb-0">Kanban Workspace</h2>
             {isTasksFetching && (
               <span className="badge bg-light text-primary border rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 small shadow-xs" style={{ fontSize: '0.72rem' }}>
@@ -320,7 +328,42 @@ export const KanbanBoardPage: React.FC = () => {
                 Updating cards...
               </span>
             )}
-            
+
+            {/* Project Switcher — only visible when user has 2+ projects */}
+            {projects.length > 1 && (
+              <div className="d-flex align-items-center gap-2">
+                <div className="position-relative d-flex align-items-center">
+                  <FolderKanban
+                    className="text-primary position-absolute"
+                    style={{ width: '14px', height: '14px', left: '10px', pointerEvents: 'none', zIndex: 1 }}
+                  />
+                  <select
+                    value={activeProjectId}
+                    onChange={(e) => {
+                      resetFilters();
+                      navigate(`/projects/${e.target.value}/board`);
+                    }}
+                    className="form-select form-select-sm fw-semibold border rounded-3 shadow-sm"
+                    style={{
+                      paddingLeft: '30px',
+                      fontSize: '0.78rem',
+                      minWidth: '180px',
+                      background: 'linear-gradient(135deg, #f8faff 0%, #eef2ff 100%)',
+                      color: '#3730a3',
+                      borderColor: '#c7d2fe',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {projects.map((p: any) => (
+                      <option key={p.id} value={String(p.id)}>
+                        [{p.code}] {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             {/* Dual-View Navigation Tab Bar */}
             <div className="btn-group btn-group-sm bg-white p-1 rounded-3 border shadow-xs">
               <button
@@ -341,7 +384,9 @@ export const KanbanBoardPage: React.FC = () => {
             </div>
           </div>
           <p className="small text-muted mb-0">
-            Multi-criteria search, two-way URL sync, expandable cards, and optimistic UI state engine.
+            {projects.length > 1
+              ? `Viewing: ${projects.find((p: any) => String(p.id) === activeProjectId)?.name || 'Project'} — switch projects using the dropdown above`
+              : 'Multi-criteria search, two-way URL sync, expandable cards, and optimistic UI state engine.'}
           </p>
         </div>
 

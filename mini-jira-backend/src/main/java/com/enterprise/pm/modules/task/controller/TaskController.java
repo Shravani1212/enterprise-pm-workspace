@@ -52,7 +52,7 @@ public class TaskController {
     }
 
     @PostMapping("/projects/{projectId}/tasks")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ROLE_ADMIN', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
+    @PreAuthorize("hasAnyRole('PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER')")
     @RequireProjectAccess(paramName = "projectId")
     public ResponseEntity<ApiResponse<TaskResponse>> createTask(@PathVariable("projectId") Long projectId,
                                                                  @Valid @RequestBody TaskCreateRequest request,
@@ -69,6 +69,7 @@ public class TaskController {
     }
 
     @PatchMapping("/tasks/{id}")
+    @PreAuthorize("hasAnyRole('PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER')")
     public ResponseEntity<ApiResponse<TaskResponse>> updateTask(@PathVariable("id") Long id,
                                                                  @Valid @RequestBody TaskUpdateRequest request,
                                                                  @AuthenticationPrincipal UserPrincipal currentUser) {
@@ -83,10 +84,11 @@ public class TaskController {
                                                                        @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
         verifyProjectAccess(currentUser, projectId);
-        return ResponseEntity.ok(ApiResponse.success("Task status updated", taskService.patchTaskStatus(id, request.statusId(), request.delayReason())));
+        return ResponseEntity.ok(ApiResponse.success("Task status updated", taskService.patchTaskStatus(id, request.statusId(), request.delayReason(), currentUser)));
     }
 
     @PatchMapping("/tasks/{id}/assignee")
+    @PreAuthorize("hasAnyRole('PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER')")
     public ResponseEntity<ApiResponse<TaskResponse>> updateTaskAssignee(@PathVariable("id") Long id,
                                                                          @RequestBody TaskAssigneeUpdateRequest request,
                                                                          @AuthenticationPrincipal UserPrincipal currentUser) {
@@ -96,6 +98,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/tasks/{id}")
+    @PreAuthorize("hasAnyRole('PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER')")
     public ResponseEntity<ApiResponse<Void>> deleteTask(@PathVariable("id") Long id,
                                                          @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);

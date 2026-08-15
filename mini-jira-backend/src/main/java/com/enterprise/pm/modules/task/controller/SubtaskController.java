@@ -33,25 +33,29 @@ public class SubtaskController {
     }
 
     @PostMapping("/tasks/{taskId}/subtasks")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ROLE_ADMIN', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
+    @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
     public ResponseEntity<ApiResponse<SubtaskResponse>> createSubtask(@PathVariable("taskId") Long taskId,
-                                                                       @Valid @RequestBody SubtaskCreateRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("Subtask created successfully", subtaskService.createSubtask(taskId, request)));
+                                                                       @Valid @RequestBody SubtaskCreateRequest request,
+                                                                       @AuthenticationPrincipal UserPrincipal currentUser) {
+        return ResponseEntity.ok(ApiResponse.success("Subtask created successfully", subtaskService.createSubtask(taskId, request, currentUser)));
     }
 
     @PatchMapping("/subtasks/{id}/toggle")
-    public ResponseEntity<ApiResponse<TaskResponse>> toggleSubtaskCompletion(@PathVariable("id") Long id) {
-        TaskResponse updatedParentTask = subtaskService.toggleSubtaskCompletion(id);
+    public ResponseEntity<ApiResponse<TaskResponse>> toggleSubtaskCompletion(@PathVariable("id") Long id,
+                                                                              @AuthenticationPrincipal UserPrincipal currentUser) {
+        TaskResponse updatedParentTask = subtaskService.toggleSubtaskCompletion(id, currentUser);
         return ResponseEntity.ok(ApiResponse.success("Subtask toggled successfully", updatedParentTask));
     }
 
     @DeleteMapping("/subtasks/{id}")
+    @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
     public ResponseEntity<ApiResponse<TaskResponse>> deleteSubtask(@PathVariable("id") Long id) {
         TaskResponse updatedParentTask = subtaskService.deleteSubtask(id);
         return ResponseEntity.ok(ApiResponse.success("Subtask deleted successfully", updatedParentTask));
     }
 
     @PostMapping("/subtasks/{id}/attachment")
+    @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
     public ResponseEntity<ApiResponse<SubtaskResponse>> uploadSubtaskAttachment(@PathVariable("id") Long id,
                                                                                 @RequestParam("file") MultipartFile file) {
         SubtaskResponse response = subtaskService.uploadSubtaskAttachment(id, file);
@@ -73,6 +77,7 @@ public class SubtaskController {
     }
 
     @DeleteMapping("/subtasks/{id}/attachment")
+    @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD')")
     public ResponseEntity<ApiResponse<SubtaskResponse>> deleteSubtaskAttachment(@PathVariable("id") Long id) {
         SubtaskResponse response = subtaskService.deleteSubtaskAttachment(id);
         return ResponseEntity.ok(ApiResponse.success("Subtask attachment deleted successfully", response));
