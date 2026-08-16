@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import React from 'react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Project } from '../../types';
+
+// We override some default react-calendar styles here to make it match your theme
+import './DashboardCalendar.css';
 
 interface DashboardCalendarProps {
   projects: Project[];
@@ -13,35 +18,8 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
   selectedDate,
   onDateSelect,
 }) => {
-  const todayVal = new Date();
-  const [currentYear, setCurrentYear] = useState(todayVal.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(todayVal.getMonth()); // 0-indexed
 
-  const handlePrevMonth = () => {
-    const minMonth = todayVal.getMonth();
-    const minYear = todayVal.getFullYear();
-    if (currentYear === minYear && currentMonth === minMonth) return;
-
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((prev) => prev - 1);
-    } else {
-      setCurrentMonth((prev) => prev - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    const maxYear = todayVal.getFullYear();
-    if (currentYear === maxYear && currentMonth === 11) return;
-
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((prev) => prev + 1);
-    } else {
-      setCurrentMonth((prev) => prev + 1);
-    }
-  };
-
+  // Helper to format Date object into YYYY-MM-DD to match project string dates
   const formatDateLocal = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -49,96 +27,46 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
     return `${y}-${m}-${d}`;
   };
 
+  // This function tells react-calendar what extra HTML to render inside each day box
+  const tileContent = ({ date, view }: { date: Date; view: string }) => {
+    // We only want dots on the actual "month" view days
+    if (view === 'month') {
+      const dateStr = formatDateLocal(date);
+      const startsToday = projects.some((p) => p.startDate === dateStr);
+      const endsToday = projects.some((p) => p.endDate === dateStr);
+
+      if (startsToday || endsToday) {
+        return (
+          <div className="d-flex justify-content-center gap-1 mt-1" style={{ height: '6px' }}>
+            {startsToday && (
+              <span className="bg-success rounded-circle" style={{ width: '6px', height: '6px' }}></span>
+            )}
+            {endsToday && (
+              <span className="bg-danger rounded-circle" style={{ width: '6px', height: '6px' }}></span>
+            )}
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+
   return (
-    <div className="card card-glass border-0 rounded-4 shadow-sm p-4 w-100 animate-fade-in">
+    <div className="card card-glass border-0 rounded-4 shadow-sm p-4 w-100 animate-fade-in custom-calendar-wrapper">
       <h2 className="h6 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
         <CalendarIcon style={{ width: '16px', height: '16px' }} className="text-primary" />
         <span>Project Events Calendar</span>
       </h2>
 
-      {/* Month Navigation */}
-      <div className="d-flex align-items-center justify-content-between mb-3 bg-light p-2 rounded-3 border">
-        <button
-          type="button"
-          onClick={handlePrevMonth}
-          disabled={currentYear === todayVal.getFullYear() && currentMonth === todayVal.getMonth()}
-          className="btn btn-xs btn-light border p-1 rounded-2 shadow-sm text-secondary hover-bg-white disabled-opacity-30"
-        >
-          <ChevronLeft style={{ width: '14px', height: '14px' }} />
-        </button>
-        <span className="fw-bold text-dark text-xs text-uppercase" style={{ letterSpacing: '0.05em' }}>
-          {new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
-        </span>
-        <button
-          type="button"
-          onClick={handleNextMonth}
-          disabled={currentYear === todayVal.getFullYear() && currentMonth === 11}
-          className="btn btn-xs btn-light border p-1 rounded-2 shadow-sm text-secondary hover-bg-white disabled-opacity-30"
-        >
-          <ChevronRight style={{ width: '14px', height: '14px' }} />
-        </button>
-      </div>
-
-      {/* Days of Week Headers */}
-      <div className="d-grid gap-1 mb-2 text-center text-muted fw-bold" style={{ gridTemplateColumns: 'repeat(7, 1fr)', fontSize: '0.68rem' }}>
-        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-          <div key={day} className="py-1">{day}</div>
-        ))}
-      </div>
-
-      {/* Grid Cells */}
-      <div className="d-grid gap-1.5 text-center" style={{ gridTemplateColumns: 'repeat(7, 1fr)', fontSize: '0.75rem' }}>
-        {(() => {
-          const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-          const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-
-          const cells = [];
-          for (let i = 0; i < firstDayIndex; i++) {
-            cells.push(<div key={`empty-${i}`} className="p-1.5 opacity-0"></div>);
-          }
-
-          for (let day = 1; day <= daysInMonth; day++) {
-            const thisDate = new Date(currentYear, currentMonth, day);
-            const isSelected = selectedDate.getDate() === day &&
-                               selectedDate.getMonth() === currentMonth &&
-                               selectedDate.getFullYear() === currentYear;
-            const isToday = todayVal.getDate() === day &&
-                            todayVal.getMonth() === currentMonth &&
-                            todayVal.getFullYear() === currentYear;
-
-            const dateStr = formatDateLocal(thisDate);
-            const startsToday = projects.some((p) => p.startDate === dateStr);
-            const endsToday = projects.some((p) => p.endDate === dateStr);
-
-            cells.push(
-              <div
-                key={`day-${day}`}
-                onClick={() => onDateSelect(thisDate)}
-                className={`p-1.5 rounded-3 cursor-pointer transition-all d-flex flex-column align-items-center justify-content-center position-relative ${
-                  isSelected 
-                    ? 'bg-primary text-white shadow-sm fw-boldScale' 
-                    : isToday 
-                      ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-boldScale' 
-                      : 'bg-white border hover-bg-light text-dark'
-                }`}
-                style={{ minHeight: '34px' }}
-              >
-                <span>{day}</span>
-                <div className="position-absolute bottom-0 d-flex gap-1 mb-0.5 justify-content-center" style={{ width: '100%' }}>
-                  {startsToday && (
-                    <span className="rounded-circle bg-success" style={{ width: '4px', height: '4px' }}></span>
-                  )}
-                  {endsToday && (
-                    <span className="rounded-circle bg-danger" style={{ width: '4px', height: '4px' }}></span>
-                  )}
-                </div>
-              </div>
-            );
-          }
-
-          return cells;
-        })()}
-      </div>
+      {/* The Third-Party react-calendar component */}
+      <Calendar
+        onChange={(val) => onDateSelect(val as Date)}
+        value={selectedDate}
+        tileContent={tileContent}
+        className="w-100 border-0 shadow-none bg-transparent"
+        prev2Label={null} // Hide the "double back" arrows
+        next2Label={null} // Hide the "double forward" arrows
+      />
     </div>
   );
 };
