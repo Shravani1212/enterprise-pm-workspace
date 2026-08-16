@@ -12,7 +12,7 @@ spring:
       enabled: true
 
 server:
-  port: ${PORT:8080}
+  port: ${PORT:10000}
   servlet:
     context-path: /api/v1
 
