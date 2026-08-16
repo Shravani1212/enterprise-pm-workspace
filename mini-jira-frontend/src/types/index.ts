@@ -42,6 +42,8 @@ export interface ProjectMember {
   active: boolean;
   lead?: User;
   joinedAt: string;
+  role?: any;
+  project?: any;
 }
 
 export interface TaskStatus {
