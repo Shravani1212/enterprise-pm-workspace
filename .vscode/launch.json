@@ -9,6 +9,16 @@
             "projectName": "enterprise-pm-backend",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ProjectPulseApplication<project-pulse-backend>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.projectpulse.pm.ProjectPulseApplication",
+            "projectName": "project-pulse-backend",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
