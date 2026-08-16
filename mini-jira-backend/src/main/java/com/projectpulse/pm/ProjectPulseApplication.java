@@ -9,9 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(exclude = {RedisRepositoriesAutoConfiguration.class})
 @EnableScheduling
 @EnableJpaRepositories(basePackages = "com.projectpulse.pm")
-public class EnterprisePmApplication {
+public class ProjectPulseApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(EnterprisePmApplication.class, args);
+        SpringApplication.run(ProjectPulseApplication.class, args);
     }
 }
