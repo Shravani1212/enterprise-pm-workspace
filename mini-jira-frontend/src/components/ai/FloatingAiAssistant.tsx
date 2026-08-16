@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, Sparkles, X, Send, Maximize2, Lightbulb } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate, useLocation } from 'react-router-dom';
+import apiClient from '../../services/apiClient';
 export const FloatingAiAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
@@ -12,24 +12,50 @@ export const FloatingAiAssistant: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSend = (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim()) return;
 
     const userMsg = input.trim();
     setMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
     setInput('');
+    
+    // Extract projectId from URL if present, otherwise default to 1
+    const pathParts = location.pathname.split('/');
+    const projectIdIndex = pathParts.indexOf('projects') + 1;
+    const projectId = (projectIdIndex > 0 && pathParts[projectIdIndex] && !isNaN(Number(pathParts[projectIdIndex]))) 
+      ? Number(pathParts[projectIdIndex]) 
+      : 1;
 
-    setTimeout(() => {
-      let reply = "I've analyzed your workspace. You have 3 critical tasks pending in ProjectPulse Platform v1.0.";
-      if (userMsg.toLowerCase().includes('task') || userMsg.toLowerCase().includes('pending')) {
-        reply = "⚠️ Attention: 'Fix Critical Memory Leak in Auth Token Refresh Service' is overdue by 21 days! Assigned to @dev_user.";
-      } else if (userMsg.toLowerCase().includes('project')) {
-        reply = "You currently have 4 active projects in your project-pulse directory: NEXUS, ECM, MBA, and AIK.";
-      }
-      setMessages((prev) => [...prev, { sender: 'ai', text: reply }]);
-    }, 600);
+    try {
+      setMessages((prev) => [...prev, { sender: 'ai', text: '...' }]); // Loading state
+      
+      const res = await apiClient.post('/ai/chat', { 
+        projectId: projectId, 
+        message: userMsg 
+      });
+
+      setMessages((prev) => {
+        const newMsgs = [...prev];
+        newMsgs.pop(); // Remove loading state
+        
+        if (res.data.success && res.data.data) {
+          newMsgs.push({ sender: 'ai', text: res.data.data.reply });
+        } else {
+          newMsgs.push({ sender: 'ai', text: 'Sorry, I encountered an error.' });
+        }
+        return newMsgs;
+      });
+    } catch (error) {
+      setMessages((prev) => {
+        const newMsgs = [...prev];
+        newMsgs.pop();
+        newMsgs.push({ sender: 'ai', text: '⚠️ System error connecting to AI backend.' });
+        return newMsgs;
+      });
+    }
   };
 
   return (
