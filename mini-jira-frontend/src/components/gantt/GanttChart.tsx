@@ -1,208 +1,130 @@
-import React, { useState } from 'react';
-import { Task } from '../../types';
-import { format, addDays, differenceInDays, startOfWeek } from 'date-fns';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Task as AppTask } from '../../types';
+import { Gantt, Task as GanttTask, ViewMode } from 'gantt-task-react';
+import "gantt-task-react/dist/index.css";
+import { addDays, startOfWeek } from 'date-fns';
+import { Calendar } from 'lucide-react';
 
 interface GanttChartProps {
-  tasks: Task[];
-  onTaskClick?: (task: Task) => void;
+  tasks: AppTask[];
+  onTaskClick?: (task: AppTask) => void;
 }
 
 export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) => {
-  const [currentStartDate, setCurrentStartDate] = useState<Date>(() => startOfWeek(new Date()));
 
-  // Calculate 16-day timeline window
-  const days = useMemoDays(currentStartDate, 16);
+  const ganttTasks: GanttTask[] = useMemo(() => {
+    const today = startOfWeek(new Date());
 
-  const handlePrevWeek = () => setCurrentStartDate((prev) => addDays(prev, -7));
-  const handleNextWeek = () => setCurrentStartDate((prev) => addDays(prev, 7));
-  const handleToday = () => setCurrentStartDate(startOfWeek(new Date()));
+    if (tasks.length === 0) {
+      // Gantt component needs at least one task to render correctly without crashing
+      return [{
+        start: today,
+        end: addDays(today, 1),
+        name: 'No tasks available',
+        id: 'empty',
+        type: 'task',
+        progress: 0,
+        isDisabled: true,
+        styles: { progressColor: 'transparent', progressSelectedColor: 'transparent' }
+      }];
+    }
+
+    return tasks.map(task => {
+      const subtasks = task.subtasks || [];
+      const completedCount = subtasks.filter(s => s.completed).length;
+      const totalSubtasks = subtasks.length || task.subtaskCount || 0;
+      const progressPct = totalSubtasks > 0
+        ? Math.round((completedCount / totalSubtasks) * 100)
+        : task.progressPercentage || 0;
+
+      const taskStart = task.startDate ? new Date(task.startDate) : today;
+      const taskEnd = task.endDate ? new Date(task.endDate) : addDays(taskStart, 4);
+
+      return {
+        start: taskStart,
+        end: taskEnd,
+        name: task.title,
+        id: String(task.id),
+        type: 'task',
+        progress: progressPct,
+        isDisabled: false,
+        styles: { progressColor: '#06b6d4', progressSelectedColor: '#3b82f6' },
+        project: String(task.id) // Keep original task ID reference if needed
+      };
+    });
+  }, [tasks]);
+
+  const handleTaskClick = (ganttTask: GanttTask) => {
+    if (ganttTask.id === 'empty') return;
+    if (onTaskClick) {
+      const originalTask = tasks.find(t => String(t.id) === ganttTask.id);
+      if (originalTask) {
+        onTaskClick(originalTask);
+      }
+    }
+  };
+
+const formatDate = (date: Date) => {
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+const CustomTaskListHeader: React.FC<any> = ({ headerHeight, rowWidth, fontFamily, fontSize }) => {
+  return (
+    <div className="d-flex align-items-center border-bottom border-end px-2 bg-light text-muted fw-bold" style={{ height: headerHeight, fontFamily, fontSize, width: rowWidth, minWidth: '240px' }}>
+      <div className="flex-grow-1 text-truncate" style={{ paddingRight: '10px' }}>Name</div>
+      <div style={{ width: '70px', flexShrink: 0, fontSize: '0.85em' }}>From</div>
+      <div style={{ width: '70px', flexShrink: 0, fontSize: '0.85em' }}>To</div>
+    </div>
+  );
+};
+
+const CustomTaskListTable: React.FC<any> = ({ rowHeight, rowWidth, tasks, fontFamily, fontSize }) => {
+  return (
+    <div style={{ fontFamily, fontSize, width: rowWidth, minWidth: '240px' }} className="border-end">
+      {tasks.map((t: GanttTask, i: number) => (
+        <div key={t.id} className="d-flex align-items-center border-bottom px-2" style={{ height: rowHeight }}>
+          <div className="text-truncate flex-grow-1" style={{ minWidth: 0, paddingRight: '10px', fontSize: '0.9em' }} title={t.name}>
+            {t.name}
+          </div>
+          <div style={{ width: '70px', flexShrink: 0, fontSize: '0.8em', color: '#666' }}>
+            {formatDate(t.start)}
+          </div>
+          <div style={{ width: '70px', flexShrink: 0, fontSize: '0.8em', color: '#666' }}>
+            {formatDate(t.end)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
   return (
-    <div className="bg-white border rounded-4 shadow-xs overflow-hidden d-flex flex-column">
+    <div className="bg-white border rounded-4 shadow-xs overflow-hidden d-flex flex-column" style={{ height: '100%', minHeight: '600px' }}>
       {/* Top Header Controls Bar */}
       <div className="p-3 border-bottom d-flex align-items-center justify-content-between bg-white">
         <div className="d-flex align-items-center gap-2">
           <Calendar className="text-primary" style={{ width: '18px', height: '18px' }} />
           <h3 className="h6 fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem' }}>Project Timeline & Gantt Chart</h3>
         </div>
-
-        <div className="btn-group btn-group-sm shadow-xs">
-          <button
-            onClick={handleToday}
-            className="btn btn-outline-secondary fw-semibold bg-white text-xs"
-          >
-            Today
-          </button>
-          <button
-            onClick={handlePrevWeek}
-            className="btn btn-outline-secondary bg-white text-xs"
-          >
-            <ChevronLeft style={{ width: '14px', height: '14px' }} />
-          </button>
-          <button
-            onClick={handleNextWeek}
-            className="btn btn-outline-secondary bg-white text-xs"
-          >
-            <ChevronRight style={{ width: '14px', height: '14px' }} />
-          </button>
-        </div>
       </div>
 
-      {/* Main Gantt Grid View */}
-      <div className="overflow-auto flex-grow-1">
-        <div style={{ minWidth: '1020px' }}>
-          
-          {/* Header Row matching Image 2 (TASK left, Date columns right) */}
-          <div className="d-flex border-bottom bg-white text-muted fw-bold" style={{ fontSize: '0.74rem' }}>
-            {/* Task Name Column Header */}
-            <div className="p-3 border-end shrink-0 text-uppercase tracking-wider text-secondary" style={{ width: '280px', letterSpacing: '0.05em' }}>
-              TASK
-            </div>
-
-            {/* Date Columns matching Image 2 (Date number on top, short month Aug below) */}
-            <div className="flex-grow-1 d-grid" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
-              {days.map((day, idx) => {
-                const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-                return (
-                  <div
-                    key={idx}
-                    className={`p-2 text-center border-end d-flex flex-column align-items-center justify-center ${
-                      isToday ? 'bg-primary bg-opacity-10 text-primary fw-extrabold' : 'text-secondary'
-                    }`}
-                  >
-                    <div className="fw-bold" style={{ fontSize: '0.78rem' }}>{format(day, 'd')}</div>
-                    <div className="text-uppercase" style={{ fontSize: '0.62rem' }}>{format(day, 'MMM')}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Task Timeline Rows matching Image 2 */}
-          <div>
-            {tasks.map((task) => {
-              // Calculate completion progress percentage
-              const subtasks = task.subtasks || [];
-              const completedCount = subtasks.filter(s => s.completed).length;
-              const totalSubtasks = subtasks.length || task.subtaskCount || 0;
-              const progressPct = totalSubtasks > 0 ? Math.round((completedCount / totalSubtasks) * 100) : task.progressPercentage || 0;
-
-              // Subtitle matching Image 2 (e.g. John Carter · In Progress · 1/4)
-              const assigneeName = task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : 'Unassigned';
-              const statusName = task.status?.name || 'Backlog';
-              const subtaskRatio = `${completedCount}/${totalSubtasks}`;
-              const subtitleStr = `${assigneeName} · ${statusName} · ${subtaskRatio}`;
-
-              // Parse task start & end dates (fallback to today window if not explicitly set)
-              const taskStart = task.startDate ? new Date(task.startDate) : currentStartDate;
-              const taskEnd = task.endDate ? new Date(task.endDate) : addDays(taskStart, 4);
-
-              // Normalize dates to midnight for accurate calculation
-              const startOfTimeline = new Date(days[0]);
-              startOfTimeline.setHours(0, 0, 0, 0);
-
-              const sDate = new Date(taskStart);
-              sDate.setHours(0, 0, 0, 0);
-
-              const eDate = new Date(taskEnd);
-              eDate.setHours(0, 0, 0, 0);
-
-              // Check if task has exceeded its end date and is still incomplete
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const isExceeded = today > eDate && progressPct < 100;
-
-              // Calculate start column offset & visible span length within the 16-day grid
-              let startOffset = 0;
-              let duration = 0;
-
-              if (sDate >= startOfTimeline) {
-                startOffset = differenceInDays(sDate, startOfTimeline);
-                duration = differenceInDays(eDate, sDate) + 1;
-              } else {
-                startOffset = 0;
-                duration = differenceInDays(eDate, startOfTimeline) + 1;
-              }
-
-              duration = Math.max(0, duration);
-              const visibleSpan = Math.min(duration, 16 - startOffset);
-
-              return (
-                <div key={task.id} className="d-flex align-items-center border-bottom hover-bg-light transition-all" style={{ height: '62px' }}>
-                  
-                  {/* Task Name & Subtitle Cell matching Image 2 */}
-                  <div
-                    onClick={() => onTaskClick?.(task)}
-                    className="p-3 border-end shrink-0 cursor-pointer d-flex flex-column justify-center"
-                    style={{ width: '280px' }}
-                  >
-                    <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.86rem', lineHeight: '1.2' }}>
-                      {task.title}
-                    </div>
-                    <div className="text-muted text-truncate mt-0.5" style={{ fontSize: '0.72rem' }}>
-                      {subtitleStr}
-                    </div>
-                  </div>
-
-                  {/* Timeline Bar Cell Grid matching Image 2 */}
-                  <div className="flex-grow-1 d-grid align-items-center position-relative px-2" style={{ gridTemplateColumns: 'repeat(16, 1fr)', height: '100%' }}>
-                    {startOffset < 16 && visibleSpan > 0 && (
-                      <div
-                        style={{
-                          gridColumnStart: startOffset + 1,
-                          gridColumnEnd: `span ${visibleSpan}`,
-                          height: '30px',
-                          border: isExceeded ? '1px solid #fca5a5' : '1px solid #bfdbfe',
-                          backgroundColor: isExceeded ? '#fef2f2' : '#eff6ff'
-                        }}
-                        className="rounded-pill shadow-xs gantt-bar-hover d-flex align-items-center justify-content-center text-dark position-relative overflow-hidden cursor-pointer"
-                        onClick={() => onTaskClick?.(task)}
-                        title={`${task.title} (${progressPct}% complete) ${isExceeded ? '⚠️ Exceeded End Date!' : ''}`}
-                      >
-                        {/* Gradient Progress Fill Shading matching Image 2 cyan/blue bar */}
-                        <div
-                          className="position-absolute start-0 top-0 bottom-0 rounded-pill transition-all"
-                          style={{
-                            width: `${progressPct}%`,
-                            background: isExceeded 
-                              ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
-                              : 'linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%)'
-                          }}
-                        ></div>
-
-                        {/* Progress Percentage Text inside bar matching Image 2 */}
-                        <span 
-                          className="fw-bold position-relative z-1 text-xs" 
-                          style={{ 
-                            color: progressPct > 50 ? '#ffffff' : (isExceeded ? '#991b1b' : '#1e3a8a'),
-                            fontSize: '0.72rem' 
-                          }}
-                        >
-                          {progressPct}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              );
-            })}
-
-            {tasks.length === 0 && (
-              <div className="p-5 text-center text-muted small">
-                No tasks available for timeline visualization.
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Main Gantt Library Component */}
+      <div className="flex-grow-1 overflow-auto" style={{ padding: '20px' }}>
+        <Gantt
+          tasks={ganttTasks}
+          viewMode={ViewMode.Day}
+          onClick={handleTaskClick}
+          columnWidth={60}
+          listCellWidth="280px"
+          rowHeight={50}
+          headerHeight={50}
+          TaskListHeader={CustomTaskListHeader}
+          TaskListTable={CustomTaskListTable}
+        />
       </div>
     </div>
   );
 };
-
-function useMemoDays(startDate: Date, count: number): Date[] {
-  return React.useMemo(() => {
-    return Array.from({ length: count }, (_, i) => addDays(startDate, i));
-  }, [startDate, count]);
-}
