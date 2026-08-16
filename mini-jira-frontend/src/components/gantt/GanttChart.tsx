@@ -48,7 +48,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
         type: 'task',
         progress: progressPct,
         isDisabled: false,
-        styles: { progressColor: '#06b6d4', progressSelectedColor: '#3b82f6' },
+        styles: { progressColor: '#188fa4ff', progressSelectedColor: '#3b82f6' },
         project: String(task.id) // Keep original task ID reference if needed
       };
     });
