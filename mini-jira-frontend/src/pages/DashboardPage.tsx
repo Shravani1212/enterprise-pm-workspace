@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  FolderKanban, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  TrendingUp, 
-  Activity, 
-  Sparkles, 
-  ShieldCheck, 
-  BarChart3, 
-  Calendar, 
-  Zap, 
+import {
+  Users,
+  FolderKanban,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  TrendingUp,
+  Activity,
+  Sparkles,
+  ShieldCheck,
+  BarChart3,
+  Calendar,
+  Zap,
   FileText,
   UserCheck,
   Plus,
@@ -34,13 +34,13 @@ export const DashboardPage: React.FC = () => {
   const isProjectManager = userRoles.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER');
   const isProjectLead = userRoles.some(r => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD');
 
-  const roleType = isSystemAdmin 
-    ? 'ADMIN' 
-    : isProjectManager 
-    ? 'PROJECT_MANAGER' 
-    : isProjectLead
-    ? 'PROJECT_LEAD'
-    : 'DEVELOPER';
+  const roleType = isSystemAdmin
+    ? 'ADMIN'
+    : isProjectManager
+      ? 'PROJECT_MANAGER'
+      : isProjectLead
+        ? 'PROJECT_LEAD'
+        : 'DEVELOPER';
 
   // Dynamic Data State
   const [loading, setLoading] = useState(true);
@@ -57,12 +57,12 @@ export const DashboardPage: React.FC = () => {
         Promise<any>,
         Promise<any>
       ] = [
-        apiClient.get<ApiResponse<Project[]>>('/projects'),
-        apiClient.get<ApiResponse<Task[]>>('/tasks').catch(() => ({ data: { success: false, data: [] } })),
-        (isSystemAdmin || isProjectManager)
-          ? apiClient.get<ApiResponse<User[]>>('/users').catch(() => ({ data: { success: false, data: [] } }))
-          : Promise.resolve({ data: { success: false, data: [] } })
-      ];
+          apiClient.get<ApiResponse<Project[]>>('/projects'),
+          apiClient.get<ApiResponse<Task[]>>('/tasks').catch(() => ({ data: { success: false, data: [] } })),
+          (isSystemAdmin || isProjectManager)
+            ? apiClient.get<ApiResponse<User[]>>('/users').catch(() => ({ data: { success: false, data: [] } }))
+            : Promise.resolve({ data: { success: false, data: [] } })
+        ];
 
       const [projectsRes, tasksRes, usersRes] = await Promise.all(promises);
 
@@ -103,39 +103,39 @@ export const DashboardPage: React.FC = () => {
     <div className="container-fluid p-0 animate-fade-in" style={{ maxWidth: '1240px' }}>
       {/* AUTOMATIC DASHBOARD RENDERING BASED STRICTLY ON USER ROLE */}
       {roleType === 'ADMIN' && (
-        <AdminDynamicDashboard 
-          currentUser={currentUser} 
-          projects={projects} 
-          tasks={tasks} 
-          users={users} 
-          navigate={navigate} 
+        <AdminDynamicDashboard
+          currentUser={currentUser}
+          projects={projects}
+          tasks={tasks}
+          users={users}
+          navigate={navigate}
         />
       )}
 
       {roleType === 'PROJECT_MANAGER' && (
-        <ProjectManagerDynamicDashboard 
-          currentUser={currentUser} 
-          projects={projects} 
-          tasks={tasks} 
-          navigate={navigate} 
+        <ProjectManagerDynamicDashboard
+          currentUser={currentUser}
+          projects={projects}
+          tasks={tasks}
+          navigate={navigate}
         />
       )}
 
       {roleType === 'PROJECT_LEAD' && (
-        <ProjectLeadDynamicDashboard 
-          currentUser={currentUser} 
-          projects={projects} 
-          tasks={tasks} 
-          navigate={navigate} 
+        <ProjectLeadDynamicDashboard
+          currentUser={currentUser}
+          projects={projects}
+          tasks={tasks}
+          navigate={navigate}
         />
       )}
 
       {roleType === 'DEVELOPER' && (
-        <DeveloperDynamicDashboard 
-          currentUser={currentUser} 
-          projects={projects} 
-          tasks={tasks} 
-          navigate={navigate} 
+        <DeveloperDynamicDashboard
+          currentUser={currentUser}
+          projects={projects}
+          tasks={tasks}
+          navigate={navigate}
         />
       )}
     </div>
@@ -152,7 +152,7 @@ const AdminDynamicDashboard: React.FC<{
   users: User[];
   navigate: any;
 }> = ({ currentUser, projects, tasks, users, navigate }) => {
-  
+
   // Dynamic Calculations
   const totalUsersCount = users.length || 1;
   const activeUsersCount = users.filter(u => u.roles?.length).length || users.length;
@@ -163,9 +163,10 @@ const AdminDynamicDashboard: React.FC<{
   const pmCount = users.filter(u => u.roles?.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER')).length;
   const devCount = users.filter(u => u.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER')).length;
 
-  const adminPct = Math.round((adminCount / totalUsersCount) * 100) || 5;
-  const pmPct = Math.round((pmCount / totalUsersCount) * 100) || 15;
-  const devPct = Math.round((devCount / totalUsersCount) * 100) || 80;
+  const hasUsers = users.length > 0;
+  const adminPct = hasUsers ? Math.round((adminCount / users.length) * 100) : 0;
+  const pmPct = hasUsers ? Math.round((pmCount / users.length) * 100) : 0;
+  const devPct = hasUsers ? Math.round((devCount / users.length) * 100) : 0;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -183,7 +184,7 @@ const AdminDynamicDashboard: React.FC<{
               System overview, user role management, service access control, and workspace metrics.
             </p>
           </div>
-          <button 
+          <button
             onClick={() => navigate('/users')}
             className="btn btn-light rounded-3 px-4 py-2.5 fw-semibold text-primary shadow-xs d-flex align-items-center gap-2 text-sm"
           >
@@ -344,12 +345,12 @@ const ProjectManagerDynamicDashboard: React.FC<{
 
   // Dynamic PM Calculations
   const myProjectsCount = projects.length;
-  
-  const inProgressTasks = tasks.filter(t => 
+
+  const inProgressTasks = tasks.filter(t =>
     t.status?.code === 'IN_PROGRESS' || t.status?.name?.toLowerCase().includes('progress')
   );
-  
-  const completedTasks = tasks.filter(t => 
+
+  const completedTasks = tasks.filter(t =>
     t.status?.code === 'DONE' || t.status?.name?.toLowerCase().includes('done')
   );
 
@@ -379,7 +380,7 @@ const ProjectManagerDynamicDashboard: React.FC<{
             </h2>
             <p className="text-muted small mb-0">Here's what's happening with your project portfolio today.</p>
           </div>
-          <button 
+          <button
             onClick={() => navigate('/projects')}
             className="btn btn-success bg-gradient-success border-0 text-white rounded-3 px-4 py-2.5 fw-semibold shadow-xs d-flex align-items-center gap-2 text-sm"
           >
@@ -515,10 +516,10 @@ const DeveloperDynamicDashboard: React.FC<{
   // Dynamic Developer Calculations
   // Filter tasks assigned to current user
   const myAssignedTasks = tasks.filter(t => t.assignee?.id === currentUser?.id || t.assignee?.username === currentUser?.username);
-  
+
   const inProgress = myAssignedTasks.filter(t => t.status?.code === 'IN_PROGRESS' || t.status?.name?.toLowerCase().includes('progress')).length;
   const completed = myAssignedTasks.filter(t => t.status?.code === 'DONE' || t.status?.name?.toLowerCase().includes('done')).length;
-  
+
   const loggedHours = myAssignedTasks.reduce((acc, t) => acc + (t.loggedHours || 0), 0);
 
   return (
@@ -532,7 +533,7 @@ const DeveloperDynamicDashboard: React.FC<{
             </h2>
             <p className="text-muted small mb-0">Here is your live assigned task queue and active coding items.</p>
           </div>
-          <button 
+          <button
             onClick={() => navigate('/projects/1/board')}
             className="btn btn-primary text-white rounded-3 px-4 py-2.5 fw-semibold shadow-xs d-flex align-items-center gap-2 text-sm"
           >
@@ -690,7 +691,7 @@ const ProjectLeadDynamicDashboard: React.FC<{
               Create subtasks, delegate to developers, and monitor sprint task progress.
             </p>
           </div>
-          <button 
+          <button
             onClick={() => navigate('/projects/1/board')}
             className="btn btn-light rounded-3 px-4 py-2.5 fw-semibold text-primary shadow-xs d-flex align-items-center gap-2 text-sm"
           >
