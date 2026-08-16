@@ -529,7 +529,7 @@ export const ProjectsOverviewPage: React.FC = () => {
                         {project.name}
                       </h3>
                       <p className="small text-secondary mb-4 text-truncate-2" style={{ fontSize: '0.8rem', minHeight: '38px' }}>
-                        {project.description || 'Enterprise workspace tenant project with Kanban sprint tracking.'}
+                        {project.description || 'project-pulse workspace tenant project with Kanban sprint tracking.'}
                       </p>
                     </div>
 

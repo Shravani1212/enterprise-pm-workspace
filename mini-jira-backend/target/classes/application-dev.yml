@@ -48,16 +48,16 @@ spring:
 
 app:
   storage:
-    upload-dir: ${FILE_UPLOAD_DIR:C:/enterprise-pm/attachments}
+    upload-dir: ${FILE_UPLOAD_DIR:C:/project-pulse/attachments}
   jwt:
-    secret: enterprise_mini_jira_secure_jwt_secret_key_256bit_min!
+    secret: project_pulse_mini_jira_secure_jwt_secret_key_256bit_min!
     access-token-expiration-ms: 900000        # 15 Minutes
     refresh-token-expiration-ms: 604800000    # 7 Days
 
 logging:
   level:
     root: INFO
-    com.enterprise.pm: DEBUG
+    com.projectpulse.pm: DEBUG
     org.hibernate.SQL: INFO
     org.springframework.security: INFO
     org.apache.kafka: ERROR

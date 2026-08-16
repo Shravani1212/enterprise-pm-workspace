@@ -359,7 +359,7 @@ export const UserManagementPage: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="form-control form-control-sm bg-light rounded-3 shadow-none text-sm"
-                    placeholder="e.g. rahul@enterprise.com"
+                    placeholder="e.g. rahul@project-pulse.com"
                   />
                 </div>
 

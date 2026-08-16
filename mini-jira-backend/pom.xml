@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.enterprise</groupId>
-    <artifactId>enterprise-pm-backend</artifactId>
+    <groupId>com.projectpulse</groupId>
+    <artifactId>project-pulse-backend</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>enterprise-pm-backend</name>
-    <description>Enterprise Project Management Workspace Backend System</description>
+    <name>project-pulse-backend</name>
+    <description>Project Pulse Project Management Workspace Backend System</description>
 
     <properties>
         <java.version>21</java.version>

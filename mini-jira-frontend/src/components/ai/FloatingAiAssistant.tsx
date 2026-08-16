@@ -26,7 +26,7 @@ export const FloatingAiAssistant: React.FC = () => {
       if (userMsg.toLowerCase().includes('task') || userMsg.toLowerCase().includes('pending')) {
         reply = "⚠️ Attention: 'Fix Critical Memory Leak in Auth Token Refresh Service' is overdue by 21 days! Assigned to @dev_user.";
       } else if (userMsg.toLowerCase().includes('project')) {
-        reply = "You currently have 4 active projects in your enterprise directory: NEXUS, ECM, MBA, and AIK.";
+        reply = "You currently have 4 active projects in your project-pulse directory: NEXUS, ECM, MBA, and AIK.";
       }
       setMessages((prev) => [...prev, { sender: 'ai', text: reply }]);
     }, 600);
