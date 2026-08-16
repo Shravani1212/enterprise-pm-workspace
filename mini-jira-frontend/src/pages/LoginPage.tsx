@@ -389,6 +389,19 @@ export const LoginPage: React.FC = () => {
         <div className="w-100 animate-slide-up mt-2" style={{ animationDelay: '0.15s' }}>
           <div className="card glass-login-card border-0 rounded-4 p-4 w-100 shadow-2xl">
             
+            {/* Theme Toggle - moved to top */}
+            <div className="w-100 mb-3 d-flex align-items-center justify-content-end">
+              <button
+                onClick={toggleTheme}
+                className="btn btn-sm rounded-3 p-2 d-flex align-items-center gap-2 border-0 text-muted hover-scale transition-all"
+                style={{ background: 'rgba(99,102,241,0.08)', fontSize: '0.78rem' }}
+                title="Toggle Theme"
+              >
+                <Moon style={{ width: '16px', height: '16px' }} />
+                <span className="fw-semibold">Toggle Theme</span>
+              </button>
+            </div>
+            
             {/* Role Selection Tabs */}
             <div className="mb-4">
               <div className="text-uppercase text-muted fw-bold mb-2 text-center" style={{ fontSize: '0.68rem', letterSpacing: '0.06em' }}>
@@ -533,18 +546,7 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Theme Toggle - pinned to the bottom of the right panel */}
-        <div className="w-100 pt-3 border-top d-flex align-items-center justify-content-end" style={{ borderColor: 'rgba(99,102,241,0.12)' }}>
-          <button
-            onClick={toggleTheme}
-            className="btn btn-sm rounded-3 p-2 d-flex align-items-center gap-2 border-0 text-muted hover-scale transition-all"
-            style={{ background: 'rgba(99,102,241,0.08)', fontSize: '0.78rem' }}
-            title="Toggle Theme"
-          >
-            <Moon style={{ width: '16px', height: '16px' }} />
-            <span className="fw-semibold">Toggle Theme</span>
-          </button>
-        </div>
+
       </div>
 
     </div>

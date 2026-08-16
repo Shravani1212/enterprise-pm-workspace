@@ -62,8 +62,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchChange, searchValue, onN
           {/* Sun / Moon Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="btn btn-sm btn-light rounded-3 p-2 text-muted border-0 d-flex align-items-center justify-center"
+            className="btn btn-sm btn-white rounded-circle p-2 text-muted border shadow-sm d-flex align-items-center justify-content-center"
             title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+            style={{ width: '38px', height: '38px', transition: 'all 0.2s ease-in-out' }}
+            onMouseOver={(e) => e.currentTarget.classList.add('shadow')}
+            onMouseOut={(e) => e.currentTarget.classList.remove('shadow')}
           >
             {theme === 'light' ? (
               <Moon style={{ width: '20px', height: '20px' }} />
