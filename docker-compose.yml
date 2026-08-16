@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pm_user -d enterprise_pm_db"]
+      test: [ "CMD-SHELL", "pg_isready -U pm_user -d enterprise_pm_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -72,7 +72,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      JWT_SECRET: enterprise_pm_super_secret_jwt_key_that_is_at_least_32_bytes_long_12345
+      JWT_SECRET: project_pulse_mini_jira_secure_jwt_secret_key_256bit_min_production
     depends_on:
       postgres:
         condition: service_healthy

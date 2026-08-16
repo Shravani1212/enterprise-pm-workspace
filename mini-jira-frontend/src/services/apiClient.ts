@@ -28,7 +28,7 @@ export function getFriendlyError(err: any): string {
 }
 
 const apiClient = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   withCredentials: true, // Automatically includes HttpOnly cookies on every request
   headers: {
     'Content-Type': 'application/json',
@@ -45,9 +45,12 @@ apiClient.interceptors.response.use(
       try {
         // Direct call to refresh endpoint; browser automatically sends HttpOnly jwt_refresh_token cookie
         const res = await axios.post<ApiResponse<AuthResponse>>(
-          '/api/v1/auth/refresh',
+          '/auth/refresh',
           {},
-          { withCredentials: true }
+          { 
+            baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+            withCredentials: true 
+          }
         );
 
         if (res.data.success) {
