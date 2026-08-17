@@ -1,12 +1,9 @@
 import axios from 'axios';
 import { ApiResponse, AuthResponse } from '../types';
 
-/** Translates an axios error into a clean user-friendly message */
 export function getFriendlyError(err: any): string {
   const status = err?.response?.status;
   const backendMsg = err?.response?.data?.error?.message || err?.response?.data?.message;
-
-  // Use backend's own user-friendly message if available
   if (backendMsg && !backendMsg.toLowerCase().includes('exception') && !backendMsg.toLowerCase().includes('stack')) {
     return backendMsg;
   }
@@ -23,7 +20,7 @@ export function getFriendlyError(err: any): string {
     case 502:
     case 503:
     case 504: return 'The server is temporarily unavailable. Please try again shortly.';
-    default:  return 'Something went wrong. Please try again.';
+    default: return 'Something went wrong. Please try again.';
   }
 }
 
@@ -47,9 +44,9 @@ apiClient.interceptors.response.use(
         const res = await axios.post<ApiResponse<AuthResponse>>(
           '/auth/refresh',
           {},
-          { 
+          {
             baseURL: import.meta.env.VITE_API_URL || '/api/v1',
-            withCredentials: true 
+            withCredentials: true
           }
         );
 

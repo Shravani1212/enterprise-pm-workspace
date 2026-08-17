@@ -10,6 +10,7 @@ import { AiAssistantPage } from '../pages/AiAssistantPage';
 import { ProjectsOverviewPage } from '../pages/ProjectsOverviewPage';
 import { ProjectMembersPage } from '../pages/ProjectMembersPage';
 import { UserManagementPage } from '../pages/UserManagementPage';
+
 import { DashboardPage } from '../pages/DashboardPage';
 
 // Centralized Route Path Constants
@@ -21,7 +22,7 @@ export const ROUTES = {
   KANBAN: (projectId: string | number = ':projectId') => `/projects/${projectId}/board`,
   GANTT: (projectId: string | number = ':projectId') => `/projects/${projectId}/gantt`,
   MEMBERS: (projectId: string | number = ':projectId') => `/projects/${projectId}/members`,
-  AI_ASSISTANT: '/ai-assistant',
+  AI_ASSISTANT: (projectId: string | number = ':projectId') => `/projects/${projectId}/ai-assistant`,
 };
 
 // Reusable Protected Route Wrapper Guard
@@ -36,7 +37,6 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   return <>{children}</>;
 };
 
-// Admin Only Route Guard
 export const AdminOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const isAdmin = user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN');
@@ -48,14 +48,13 @@ export const AdminOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   return <>{children}</>;
 };
 
-// Master App Routes Component
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
 
-      {/* Protected Routes Wrapped with Layout (Header, Sidebar, Footer) */}
+
       <Route
         path={ROUTES.HOME}
         element={
@@ -71,7 +70,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="projects/:projectId/gantt" element={<GanttPage />} />
         <Route path="projects/:projectId/members" element={<ProjectMembersPage />} />
         <Route path="users" element={<AdminOnlyRoute><UserManagementPage /></AdminOnlyRoute>} />
-        <Route path="ai-assistant" element={<AiAssistantPage />} />
+        <Route path="projects/:projectId/ai-assistant" element={<AiAssistantPage />} />
       </Route>
 
       {/* Catch-all Fallback Route */}

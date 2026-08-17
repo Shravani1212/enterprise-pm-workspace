@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Bot, Send, Sparkles, User as UserIcon } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { ApiResponse } from '../types';
@@ -22,6 +23,7 @@ export const AiAssistantPage: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { projectId } = useParams<{ projectId: string }>();
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +42,8 @@ export const AiAssistantPage: React.FC = () => {
 
     try {
       const res = await apiClient.post<ApiResponse<{ reply: string; actionExecuted: string; data: any }>>(
-        '/ai/chat',
-        { projectId: 1, message: currentInput }
+        `/ai/projects/${projectId || 1}/chat`,
+        { message: currentInput }
       );
 
       if (res.data.success && res.data.data) {

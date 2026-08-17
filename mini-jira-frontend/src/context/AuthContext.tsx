@@ -17,7 +17,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // On mount, check if user session is active via HttpOnly cookie
   useEffect(() => {
     apiClient
       .get('/auth/me')

@@ -26,9 +26,13 @@ public class SubtaskController {
 
     private final SubtaskService subtaskService;
     private final TaskService taskService;
+    private final com.projectpulse.pm.security.ProjectSecurityEvaluator projectSecurityEvaluator;
 
     @GetMapping("/tasks/{taskId}/subtasks")
-    public ResponseEntity<ApiResponse<List<SubtaskResponse>>> getSubtasks(@PathVariable("taskId") Long taskId) {
+    public ResponseEntity<ApiResponse<List<SubtaskResponse>>> getSubtasks(@PathVariable("taskId") Long taskId,
+                                                                          @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(taskId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success(subtaskService.getSubtasksByTaskId(taskId)));
     }
 
@@ -37,19 +41,28 @@ public class SubtaskController {
     public ResponseEntity<ApiResponse<SubtaskResponse>> createSubtask(@PathVariable("taskId") Long taskId,
                                                                        @Valid @RequestBody SubtaskCreateRequest request,
                                                                        @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(taskId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success("Subtask created successfully", subtaskService.createSubtask(taskId, request, currentUser)));
     }
 
     @PatchMapping("/subtasks/{id}/toggle")
     public ResponseEntity<ApiResponse<TaskResponse>> toggleSubtaskCompletion(@PathVariable("id") Long id,
                                                                               @AuthenticationPrincipal UserPrincipal currentUser) {
+        Subtask subtask = subtaskService.getSubtaskEntity(id);
+        Long projectId = subtask.getTask().getProject().getId();
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         TaskResponse updatedParentTask = subtaskService.toggleSubtaskCompletion(id, currentUser);
         return ResponseEntity.ok(ApiResponse.success("Subtask toggled successfully", updatedParentTask));
     }
 
     @DeleteMapping("/subtasks/{id}")
     @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse<TaskResponse>> deleteSubtask(@PathVariable("id") Long id) {
+    public ResponseEntity<ApiResponse<TaskResponse>> deleteSubtask(@PathVariable("id") Long id,
+                                                                   @AuthenticationPrincipal UserPrincipal currentUser) {
+        Subtask subtask = subtaskService.getSubtaskEntity(id);
+        Long projectId = subtask.getTask().getProject().getId();
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         TaskResponse updatedParentTask = subtaskService.deleteSubtask(id);
         return ResponseEntity.ok(ApiResponse.success("Subtask deleted successfully", updatedParentTask));
     }
@@ -57,14 +70,21 @@ public class SubtaskController {
     @PostMapping("/subtasks/{id}/attachment")
     @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<SubtaskResponse>> uploadSubtaskAttachment(@PathVariable("id") Long id,
-                                                                                @RequestParam("file") MultipartFile file) {
+                                                                                @RequestParam("file") MultipartFile file,
+                                                                                @AuthenticationPrincipal UserPrincipal currentUser) {
+        Subtask subtask = subtaskService.getSubtaskEntity(id);
+        Long projectId = subtask.getTask().getProject().getId();
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         SubtaskResponse response = subtaskService.uploadSubtaskAttachment(id, file);
         return ResponseEntity.ok(ApiResponse.success("Subtask attachment uploaded successfully", response));
     }
 
     @GetMapping("/subtasks/{id}/attachment")
-    public ResponseEntity<Resource> getSubtaskAttachment(@PathVariable("id") Long id) {
+    public ResponseEntity<Resource> getSubtaskAttachment(@PathVariable("id") Long id,
+                                                         @AuthenticationPrincipal UserPrincipal currentUser) {
         Subtask subtask = subtaskService.getSubtaskEntity(id);
+        Long projectId = subtask.getTask().getProject().getId();
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         Resource resource = subtaskService.getSubtaskAttachmentResource(id);
 
         String contentType = subtask.getAttachmentType() != null ? subtask.getAttachmentType() : "application/octet-stream";
@@ -78,7 +98,11 @@ public class SubtaskController {
 
     @DeleteMapping("/subtasks/{id}/attachment")
     @PreAuthorize("hasAnyRole('PROJECT_LEAD', 'ROLE_PROJECT_LEAD', 'PROJECT_MANAGER', 'ROLE_PROJECT_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse<SubtaskResponse>> deleteSubtaskAttachment(@PathVariable("id") Long id) {
+    public ResponseEntity<ApiResponse<SubtaskResponse>> deleteSubtaskAttachment(@PathVariable("id") Long id,
+                                                                                @AuthenticationPrincipal UserPrincipal currentUser) {
+        Subtask subtask = subtaskService.getSubtaskEntity(id);
+        Long projectId = subtask.getTask().getProject().getId();
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         SubtaskResponse response = subtaskService.deleteSubtaskAttachment(id);
         return ResponseEntity.ok(ApiResponse.success("Subtask attachment deleted successfully", response));
     }

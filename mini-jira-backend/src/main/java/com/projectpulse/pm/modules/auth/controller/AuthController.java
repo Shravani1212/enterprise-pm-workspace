@@ -116,10 +116,10 @@ public class AuthController {
     private ResponseCookie createCookie(String name, String value, long maxAgeSeconds) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(true) // MUST be true for SameSite=None
+                .secure(false) // Set to true in production with HTTPS
                 .path("/")
                 .maxAge(maxAgeSeconds)
-                .sameSite("None") // Required for cross-domain cookies (Vercel -> Render)
+                .sameSite("Strict")
                 .build();
     }
 }

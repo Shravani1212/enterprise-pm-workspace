@@ -18,6 +18,8 @@ import java.util.List;
 public class CommentController {
 
     private final ActivityLogService activityLogService;
+    private final com.projectpulse.pm.modules.task.service.TaskService taskService;
+    private final com.projectpulse.pm.security.ProjectSecurityEvaluator projectSecurityEvaluator;
 
     public record CommentCreateRequest(
         @NotBlank(message = "Comment text is required")
@@ -25,7 +27,10 @@ public class CommentController {
     ) {}
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Comment>>> getComments(@PathVariable("taskId") Long taskId) {
+    public ResponseEntity<ApiResponse<List<Comment>>> getComments(@PathVariable("taskId") Long taskId,
+                                                                  @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(taskId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success(activityLogService.getTaskComments(taskId)));
     }
 
@@ -33,6 +38,8 @@ public class CommentController {
     public ResponseEntity<ApiResponse<Comment>> addComment(@PathVariable("taskId") Long taskId,
                                                           @RequestBody CommentCreateRequest request,
                                                           @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long projectId = taskService.getProjectIdForTask(taskId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         Comment comment = activityLogService.addComment(taskId, request.content(), currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Comment added successfully", comment));
     }

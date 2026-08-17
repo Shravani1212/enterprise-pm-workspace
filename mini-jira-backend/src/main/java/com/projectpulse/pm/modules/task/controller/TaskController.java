@@ -64,7 +64,7 @@ public class TaskController {
     public ResponseEntity<ApiResponse<TaskResponse>> getTaskById(@PathVariable("id") Long id,
                                                                  @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success(taskService.getTaskById(id)));
     }
 
@@ -74,7 +74,7 @@ public class TaskController {
                                                                  @Valid @RequestBody TaskUpdateRequest request,
                                                                  @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success("Task updated successfully", taskService.updateTask(id, request)));
     }
 
@@ -83,7 +83,7 @@ public class TaskController {
                                                                        @Valid @RequestBody TaskStatusUpdateRequest request,
                                                                        @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success("Task status updated", taskService.patchTaskStatus(id, request.statusId(), request.delayReason(), currentUser)));
     }
 
@@ -93,7 +93,7 @@ public class TaskController {
                                                                          @RequestBody TaskAssigneeUpdateRequest request,
                                                                          @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         return ResponseEntity.ok(ApiResponse.success("Task assignee updated", taskService.patchTaskAssignee(id, request.assigneeId())));
     }
 
@@ -102,7 +102,7 @@ public class TaskController {
     public ResponseEntity<ApiResponse<Void>> deleteTask(@PathVariable("id") Long id,
                                                          @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         taskService.deleteTask(id);
         return ResponseEntity.ok(ApiResponse.success("Task deleted successfully", null));
     }
@@ -112,7 +112,7 @@ public class TaskController {
                                                                           @RequestParam("file") MultipartFile file,
                                                                           @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         TaskResponse response = taskService.uploadTaskAttachment(id, file);
         return ResponseEntity.ok(ApiResponse.success("Attachment uploaded successfully", response));
     }
@@ -121,7 +121,7 @@ public class TaskController {
     public ResponseEntity<Resource> getTaskAttachment(@PathVariable("id") Long id,
                                                        @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         Task task = taskService.getTaskEntity(id);
         Resource resource = taskService.getTaskAttachmentResource(id);
 
@@ -138,21 +138,9 @@ public class TaskController {
     public ResponseEntity<ApiResponse<TaskResponse>> deleteTaskAttachment(@PathVariable("id") Long id,
                                                                            @AuthenticationPrincipal UserPrincipal currentUser) {
         Long projectId = taskService.getProjectIdForTask(id);
-        verifyProjectAccess(currentUser, projectId);
+        projectSecurityEvaluator.verifyProjectAccess(currentUser, projectId);
         TaskResponse response = taskService.deleteTaskAttachment(id);
         return ResponseEntity.ok(ApiResponse.success("Attachment deleted successfully", response));
     }
 
-    private void verifyProjectAccess(UserPrincipal currentUser, Long projectId) {
-        if (projectId == null) {
-            throw new ResourceNotFoundException("Task not found");
-        }
-        boolean isAuthorized = currentUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") ||
-                               a.getAuthority().equals("ROLE_PROJECT_MANAGER") ||
-                               a.getAuthority().equals("ROLE_DEVELOPER"));
-        if (!isAuthorized && !projectSecurityEvaluator.isMember(currentUser.getId(), projectId)) {
-            throw new AccessDeniedException("Forbidden: You are not an active member of Project " + projectId);
-        }
-    }
 }

@@ -20,7 +20,6 @@ public class AiAssistantService {
     private final TaskRepository taskRepository;
 
     public record ChatRequest(
-        Long projectId,
         String message
     ) {}
 
@@ -30,9 +29,9 @@ public class AiAssistantService {
         Object data
     ) {}
 
-    public ChatResponse processUserPrompt(ChatRequest request) {
+    public ChatResponse processUserPrompt(Long projectId, ChatRequest request) {
         String input = request.message().toLowerCase().trim();
-        Long projectId = request.projectId() != null ? request.projectId() : 1L;
+        if (projectId == null) projectId = 1L;
 
         // Tool 1: AI Project Summary & WIP Bottleneck Tool - DB WHERE Clause Queries
         if (input.contains("summary") || input.contains("status") || input.contains("progress")) {

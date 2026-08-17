@@ -4,25 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { ApiResponse, AuthResponse } from '../types';
 import {
-  Layers,
   ArrowRight,
   Eye,
   EyeOff,
   Mail,
   Lock,
-  PlayCircle,
   Moon,
   FolderKanban,
-  CheckCircle2,
   Clock,
   ShieldCheck,
-  Cpu,
-  UserCheck,
   Code2,
-  Sparkles,
   Shield,
   BarChart3,
-  Terminal
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { showSuccessAlert, showErrorAlert } from '../utils/alertUtils';
@@ -115,14 +108,14 @@ export const LoginPage: React.FC = () => {
       if (res.data.success && res.data.data) {
         login(res.data.data);
         showSuccessAlert(`Welcome to ${themeConfig.portalName}!`, `Signed in as ${res.data.data.user.username}`);
-        
+
         const roles = res.data.data.user.roles || [];
-        const hasHigherRole = roles.some(r => 
-          r === 'ADMIN' || r === 'ROLE_ADMIN' || 
+        const hasHigherRole = roles.some(r =>
+          r === 'ADMIN' || r === 'ROLE_ADMIN' ||
           r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER' ||
           r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD'
         );
-        
+
         if (!hasHigherRole && roles.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER')) {
           navigate('/projects');
         } else {
@@ -143,7 +136,7 @@ export const LoginPage: React.FC = () => {
 
       {/* ── Left content area (Header, Hero contents, Stats card, Footer) ── */}
       <div className="d-flex flex-column flex-grow-1 justify-content-between position-relative z-2" style={{ minWidth: 0 }}>
-        
+
         {/* Background animated gradient blobs */}
         {/* Top-left blob */}
         <div
@@ -235,7 +228,7 @@ export const LoginPage: React.FC = () => {
         <main className="container-fluid px-4 px-lg-5 py-2 position-relative z-2 flex-grow-1">
           <div className="row g-3 w-100 mx-0">
             <div className="col-12 d-flex flex-column justify-content-start pe-lg-3 animate-slide-up">
-              
+
               {/* Promo Video */}
               <div
                 className="rounded-4 overflow-hidden position-relative mb-3"
@@ -388,7 +381,7 @@ export const LoginPage: React.FC = () => {
         {/* Login Card */}
         <div className="w-100 animate-slide-up mt-2" style={{ animationDelay: '0.15s' }}>
           <div className="card glass-login-card border-0 rounded-4 p-4 w-100 shadow-2xl">
-            
+
             {/* Theme Toggle - moved to top */}
             <div className="w-100 mb-3 d-flex align-items-center justify-content-end">
               <button
@@ -401,7 +394,7 @@ export const LoginPage: React.FC = () => {
                 <span className="fw-semibold">Toggle Theme</span>
               </button>
             </div>
-            
+
             {/* Role Selection Tabs */}
             <div className="mb-4">
               <div className="text-uppercase text-muted fw-bold mb-2 text-center" style={{ fontSize: '0.68rem', letterSpacing: '0.06em' }}>

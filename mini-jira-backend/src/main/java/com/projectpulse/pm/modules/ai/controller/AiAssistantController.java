@@ -15,8 +15,9 @@ public class AiAssistantController {
 
     private final AiAssistantService aiAssistantService;
 
-    @PostMapping("/chat")
-    public ResponseEntity<ApiResponse<ChatResponse>> processChat(@RequestBody ChatRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(aiAssistantService.processUserPrompt(request)));
+    @PostMapping("/projects/{projectId}/chat")
+    @com.projectpulse.pm.security.annotation.RequireProjectAccess(paramName = "projectId")
+    public ResponseEntity<ApiResponse<ChatResponse>> processChat(@PathVariable("projectId") Long projectId, @RequestBody ChatRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(aiAssistantService.processUserPrompt(projectId, request)));
     }
 }
