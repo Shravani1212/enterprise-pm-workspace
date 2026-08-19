@@ -12,6 +12,8 @@ import { ProjectMembersPage } from '../pages/ProjectMembersPage';
 import { UserManagementPage } from '../pages/UserManagementPage';
 
 import { DashboardPage } from '../pages/DashboardPage';
+import { NotFoundPage } from '../pages/NotFoundPage';
+import { UnauthorizedPage } from '../pages/UnauthorizedPage';
 
 // Centralized Route Path Constants
 export const ROUTES = {
@@ -19,10 +21,11 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   PROJECTS: '/projects',
-  KANBAN: (projectId: string | number = ':projectId') => `/projects/${projectId}/board`,
-  GANTT: (projectId: string | number = ':projectId') => `/projects/${projectId}/gantt`,
-  MEMBERS: (projectId: string | number = ':projectId') => `/projects/${projectId}/members`,
-  AI_ASSISTANT: (projectId: string | number = ':projectId') => `/projects/${projectId}/ai-assistant`,
+  KANBAN: (projectCode: string | number = ':projectCode') => `/projects/${projectCode}/board`,
+  GANTT: (projectCode: string | number = ':projectCode') => `/projects/${projectCode}/gantt`,
+  MEMBERS: (projectCode: string | number = ':projectCode') => `/projects/${projectCode}/members`,
+  AI_ASSISTANT: (projectCode: string | number = ':projectCode') => `/projects/${projectCode}/ai-assistant`,
+  UNAUTHORIZED: '/unauthorized',
 };
 
 // Reusable Protected Route Wrapper Guard
@@ -42,7 +45,7 @@ export const AdminOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   const isAdmin = user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN');
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={ROUTES.UNAUTHORIZED} replace />;
   }
 
   return <>{children}</>;
@@ -66,15 +69,17 @@ export const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsOverviewPage />} />
-        <Route path="projects/:projectId/board" element={<KanbanBoardPage />} />
-        <Route path="projects/:projectId/gantt" element={<GanttPage />} />
-        <Route path="projects/:projectId/members" element={<ProjectMembersPage />} />
+        <Route path="projects/:projectCode/board" element={<KanbanBoardPage />} />
+        <Route path="projects/:projectCode/gantt" element={<GanttPage />} />
+        <Route path="projects/:projectCode/members" element={<ProjectMembersPage />} />
         <Route path="users" element={<AdminOnlyRoute><UserManagementPage /></AdminOnlyRoute>} />
-        <Route path="projects/:projectId/ai-assistant" element={<AiAssistantPage />} />
+        <Route path="projects/:projectCode/ai-assistant" element={<AiAssistantPage />} />
       </Route>
 
+      <Route path={ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
+
       {/* Catch-all Fallback Route */}
-      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

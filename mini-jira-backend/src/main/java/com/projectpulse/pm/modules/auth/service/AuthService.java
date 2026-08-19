@@ -11,6 +11,8 @@ import com.projectpulse.pm.modules.auth.repository.RefreshTokenRepository;
 import com.projectpulse.pm.modules.auth.repository.RoleRepository;
 import com.projectpulse.pm.modules.auth.repository.SessionRepository;
 import com.projectpulse.pm.modules.auth.repository.UserRepository;
+import com.projectpulse.pm.modules.project.entity.Project;
+import com.projectpulse.pm.modules.project.entity.ProjectMember;
 import com.projectpulse.pm.security.JwtTokenProvider;
 import com.projectpulse.pm.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final CaptchaService captchaService;
 
     @Value("${app.jwt.access-token-expiration-ms:900000}")
     private long accessTokenExpirationMs;
@@ -62,7 +65,8 @@ public class AuthService {
                 .username(request.username())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .firstName(request.firstName() != null && !request.firstName().isBlank() ? request.firstName() : request.username())
+                .firstName(request.firstName() != null && !request.firstName().isBlank() ? request.firstName()
+                        : request.username())
                 .lastName(request.lastName() != null && !request.lastName().isBlank() ? request.lastName() : "User")
                 .status("ACTIVE")
                 .build();
@@ -94,9 +98,9 @@ public class AuthService {
         // Auto-enroll new user into all active workspace projects
         try {
             Role assignedRole = assignedRoles.stream().findFirst().orElse(null);
-            List<com.projectpulse.pm.modules.project.entity.Project> projects = projectRepository.findAll();
-            for (com.projectpulse.pm.modules.project.entity.Project p : projects) {
-                com.projectpulse.pm.modules.project.entity.ProjectMember member = com.projectpulse.pm.modules.project.entity.ProjectMember.builder()
+            List<Project> projects = projectRepository.findAll();
+            for (Project p : projects) {
+                ProjectMember member = ProjectMember.builder()
                         .project(p)
                         .user(savedUser)
                         .projectRole(assignedRole)
@@ -113,9 +117,12 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request, String deviceInfo, String ipAddress) {
+        if (!captchaService.verifyCaptcha(request.captchaToken(), ipAddress)) {
+            throw new IllegalArgumentException("Invalid captcha token");
+        }
+
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.usernameOrEmail(), request.password())
-        );
+                new UsernamePasswordAuthenticationToken(request.usernameOrEmail(), request.password()));
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         User user = userRepository.findById(principal.getId())
@@ -152,8 +159,7 @@ public class AuthService {
                 rawRefreshToken,
                 "Bearer",
                 accessTokenExpirationMs,
-                UserMapper.toUserResponse(user)
-        );
+                UserMapper.toUserResponse(user));
     }
 
     @Transactional
@@ -174,7 +180,8 @@ public class AuthService {
 
         User user = refreshToken.getUser();
         UserPrincipal principal = UserPrincipal.create(user);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null,
+                principal.getAuthorities());
 
         String newAccessToken = tokenProvider.generateAccessToken(authentication);
         String newRawRefreshToken = UUID.randomUUID().toString();
@@ -201,8 +208,7 @@ public class AuthService {
                 newRawRefreshToken,
                 "Bearer",
                 accessTokenExpirationMs,
-                UserMapper.toUserResponse(user)
-        );
+                UserMapper.toUserResponse(user));
     }
 
     @Transactional

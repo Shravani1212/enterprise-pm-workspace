@@ -141,10 +141,7 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 };
-
-/* ============================================================================
-   1. DYNAMIC ADMIN DASHBOARD VIEW
-   ============================================================================ */
+//admin dynamic dashboard
 const AdminDynamicDashboard: React.FC<{
   currentUser: User | null;
   projects: Project[];
@@ -170,7 +167,7 @@ const AdminDynamicDashboard: React.FC<{
 
   return (
     <div className="d-flex flex-column gap-4">
-      {/* Dynamic Header Banner */}
+
       <div className="card border-0 rounded-4 p-4 text-white bg-gradient-dark-header shadow-md position-relative overflow-hidden">
         <div className="d-flex align-items-center justify-content-between position-relative z-2">
           <div>
@@ -194,7 +191,6 @@ const AdminDynamicDashboard: React.FC<{
         </div>
       </div>
 
-      {/* Dynamic Stat Cards */}
       <div className="row g-3">
         <div className="col-12 col-sm-6 col-xl-3">
           <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
@@ -332,10 +328,7 @@ const AdminDynamicDashboard: React.FC<{
     </div>
   );
 };
-
-/* ============================================================================
-   2. DYNAMIC PROJECT MANAGER DASHBOARD VIEW
-   ============================================================================ */
+//projec manager
 const ProjectManagerDynamicDashboard: React.FC<{
   currentUser: User | null;
   projects: Project[];
@@ -390,7 +383,6 @@ const ProjectManagerDynamicDashboard: React.FC<{
         </div>
       </div>
 
-      {/* Dynamic Metric Cards */}
       <div className="row g-3">
         <div className="col-12 col-sm-6 col-xl-3">
           <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
@@ -473,7 +465,6 @@ const ProjectManagerDynamicDashboard: React.FC<{
           </div>
         </div>
 
-        {/* Dynamic Tasks / Deadlines List */}
         <div className="col-12 col-lg-5">
           <div className="card card-glass border-0 shadow-sm rounded-4 p-4 h-100">
             <div className="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
@@ -503,9 +494,7 @@ const ProjectManagerDynamicDashboard: React.FC<{
   );
 };
 
-/* ============================================================================
-   3. DYNAMIC DEVELOPER DASHBOARD VIEW
-   ============================================================================ */
+//Developer dynamic dashboard
 const DeveloperDynamicDashboard: React.FC<{
   currentUser: User | null;
   projects: Project[];
@@ -534,7 +523,10 @@ const DeveloperDynamicDashboard: React.FC<{
             <p className="text-muted small mb-0">Here is your live assigned task queue and active coding items.</p>
           </div>
           <button
-            onClick={() => navigate('/projects/1/board')}
+            onClick={() => {
+              const defaultCode = projects.length > 0 ? projects[0].code : '1';
+              navigate(`/projects/${defaultCode}/board`);
+            }}
             className="btn btn-primary text-white rounded-3 px-4 py-2.5 fw-semibold shadow-xs d-flex align-items-center gap-2 text-sm"
           >
             <FolderKanban style={{ width: '18px', height: '18px' }} />
@@ -543,7 +535,6 @@ const DeveloperDynamicDashboard: React.FC<{
         </div>
       </div>
 
-      {/* Dynamic Metrics */}
       <div className="row g-3">
         <div className="col-12 col-sm-6 col-xl-3">
           <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 bg-white">
@@ -598,7 +589,6 @@ const DeveloperDynamicDashboard: React.FC<{
         </div>
       </div>
 
-      {/* Dynamic Assigned Tasks – GlobalDataTable */}
       <div className="row g-4">
         <div className="col-12 col-lg-8">
           <GlobalDataTable<Task>
@@ -639,7 +629,6 @@ const DeveloperDynamicDashboard: React.FC<{
           />
         </div>
 
-        {/* Dynamic Assigned Projects List */}
         <div className="col-12 col-lg-4">
           <div className="card card-glass border-0 shadow-sm rounded-4 p-4 h-100">
             <div className="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
@@ -649,7 +638,7 @@ const DeveloperDynamicDashboard: React.FC<{
 
             <div className="d-flex flex-column gap-2.5">
               {projects.map(p => (
-                <div key={p.id} className="p-3 rounded-3 bg-light border cursor-pointer hover-scale" onClick={() => navigate('/projects/1/board')}>
+                <div key={p.id} className="p-3 rounded-3 bg-light border cursor-pointer hover-scale" onClick={() => navigate(`/projects/${p.code}/board`)}>
                   <div className="fw-bold text-dark small">{p.name}</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>Role: Developer</div>
                 </div>
@@ -661,10 +650,7 @@ const DeveloperDynamicDashboard: React.FC<{
     </div>
   );
 };
-
-/* ============================================================================
-   4. DYNAMIC PROJECT LEAD DASHBOARD VIEW
-   ============================================================================ */
+//project lead
 const ProjectLeadDynamicDashboard: React.FC<{
   currentUser: User | null;
   projects: Project[];
@@ -692,7 +678,10 @@ const ProjectLeadDynamicDashboard: React.FC<{
             </p>
           </div>
           <button
-            onClick={() => navigate('/projects/1/board')}
+            onClick={() => {
+              const defaultCode = projects.length > 0 ? projects[0].code : '1';
+              navigate(`/projects/${defaultCode}/board`);
+            }}
             className="btn btn-light rounded-3 px-4 py-2.5 fw-semibold text-primary shadow-xs d-flex align-items-center gap-2 text-sm"
           >
             <FolderKanban style={{ width: '18px', height: '18px' }} />
@@ -807,7 +796,7 @@ const ProjectLeadDynamicDashboard: React.FC<{
 
             <div className="d-flex flex-column gap-2.5">
               {projects.map(p => (
-                <div key={p.id} className="p-3 rounded-3 bg-light border cursor-pointer hover-scale" onClick={() => navigate('/projects/1/board')}>
+                <div key={p.id} className="p-3 rounded-3 bg-light border cursor-pointer hover-scale" onClick={() => navigate(`/projects/${p.code}/board`)}>
                   <div className="fw-bold text-dark small">{p.name}</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>Role: Project Lead</div>
                 </div>

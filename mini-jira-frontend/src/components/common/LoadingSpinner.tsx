@@ -12,12 +12,11 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const content = (
     <div className="d-flex flex-column align-items-center justify-content-center p-4">
       <div className="position-relative mb-3" style={{ width: '80px', height: '80px' }}>
-        {/* Outer glowing pulsating ring */}
+
         <div
           className="position-absolute top-0 start-0 w-100 h-100 rounded-circle border border-primary border-3 opacity-25 animate-ping"
           style={{ animationDuration: '2s' }}
         ></div>
-        {/* Logo container pulsating scale heartbeat */}
         <div
           className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center rounded-circle bg-white shadow-md p-2 logo-pulse-anim"
         >

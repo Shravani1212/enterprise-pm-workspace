@@ -16,7 +16,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
     const today = startOfWeek(new Date());
 
     if (tasks.length === 0) {
-      // Gantt component needs at least one task to render correctly without crashing
+
       return [{
         start: today,
         end: addDays(today, 1),
@@ -64,46 +64,46 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tasks, onTaskClick }) =>
     }
   };
 
-const formatDate = (date: Date) => {
-  const d = date.getDate().toString().padStart(2, '0');
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
-};
+  const formatDate = (date: Date) => {
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
 
-const CustomTaskListHeader: React.FC<any> = ({ headerHeight, rowWidth, fontFamily, fontSize }) => {
-  return (
-    <div className="d-flex align-items-center border-bottom border-end px-2 bg-light text-muted fw-bold" style={{ height: headerHeight, fontFamily, fontSize, width: rowWidth, minWidth: '240px' }}>
-      <div className="flex-grow-1 text-truncate" style={{ paddingRight: '10px' }}>Name</div>
-      <div style={{ width: '70px', flexShrink: 0, fontSize: '0.85em' }}>From</div>
-      <div style={{ width: '70px', flexShrink: 0, fontSize: '0.85em' }}>To</div>
-    </div>
-  );
-};
+  const CustomTaskListHeader: React.FC<any> = ({ headerHeight, rowWidth, fontFamily, fontSize }) => {
+    return (
+      <div className="d-flex align-items-center border-bottom border-end px-2 bg-light text-muted fw-bold" style={{ height: headerHeight, fontFamily, fontSize, width: rowWidth, minWidth: '240px' }}>
+        <div className="flex-grow-1 text-truncate" style={{ paddingRight: '10px' }}>Name</div>
+        <div style={{ width: '70px', flexShrink: 0, fontSize: '0.85em' }}>From</div>
+        <div style={{ width: '70px', flexShrink: 0, fontSize: '0.85em' }}>To</div>
+      </div>
+    );
+  };
 
-const CustomTaskListTable: React.FC<any> = ({ rowHeight, rowWidth, tasks, fontFamily, fontSize }) => {
-  return (
-    <div style={{ fontFamily, fontSize, width: rowWidth, minWidth: '240px' }} className="border-end">
-      {tasks.map((t: GanttTask, i: number) => (
-        <div key={t.id} className="d-flex align-items-center border-bottom px-2" style={{ height: rowHeight }}>
-          <div className="text-truncate flex-grow-1" style={{ minWidth: 0, paddingRight: '10px', fontSize: '0.9em' }} title={t.name}>
-            {t.name}
+  const CustomTaskListTable: React.FC<any> = ({ rowHeight, rowWidth, tasks, fontFamily, fontSize }) => {
+    return (
+      <div style={{ fontFamily, fontSize, width: rowWidth, minWidth: '240px' }} className="border-end">
+        {tasks.map((t: GanttTask, i: number) => (
+          <div key={t.id} className="d-flex align-items-center border-bottom px-2" style={{ height: rowHeight }}>
+            <div className="text-truncate flex-grow-1" style={{ minWidth: 0, paddingRight: '10px', fontSize: '0.9em' }} title={t.name}>
+              {t.name}
+            </div>
+            <div style={{ width: '70px', flexShrink: 0, fontSize: '0.8em', color: '#666' }}>
+              {formatDate(t.start)}
+            </div>
+            <div style={{ width: '70px', flexShrink: 0, fontSize: '0.8em', color: '#666' }}>
+              {formatDate(t.end)}
+            </div>
           </div>
-          <div style={{ width: '70px', flexShrink: 0, fontSize: '0.8em', color: '#666' }}>
-            {formatDate(t.start)}
-          </div>
-          <div style={{ width: '70px', flexShrink: 0, fontSize: '0.8em', color: '#666' }}>
-            {formatDate(t.end)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white border rounded-4 shadow-xs overflow-hidden d-flex flex-column" style={{ height: '100%', minHeight: '600px' }}>
-      {/* Top Header Controls Bar */}
+
       <div className="p-3 border-bottom d-flex align-items-center justify-content-between bg-white">
         <div className="d-flex align-items-center gap-2">
           <Calendar className="text-primary" style={{ width: '18px', height: '18px' }} />
@@ -111,7 +111,6 @@ const CustomTaskListTable: React.FC<any> = ({ rowHeight, rowWidth, tasks, fontFa
         </div>
       </div>
 
-      {/* Main Gantt Library Component */}
       <div className="flex-grow-1 overflow-auto" style={{ padding: '20px' }}>
         <Gantt
           tasks={ganttTasks}

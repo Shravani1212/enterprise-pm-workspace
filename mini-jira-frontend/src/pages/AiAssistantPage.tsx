@@ -23,7 +23,19 @@ export const AiAssistantPage: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { projectId } = useParams<{ projectId: string }>();
+  const { projectCode } = useParams<{ projectCode: string }>();
+  const [projects, setProjects] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    apiClient.get('/projects').then((res) => {
+      if (res.data?.success && res.data?.data?.length > 0) {
+        setProjects(res.data.data);
+      }
+    }).catch(() => { });
+  }, []);
+
+  const activeProject = projects.find(p => p.code === projectCode);
+  const activeProjectId = activeProject ? String(activeProject.id) : (projects.length > 0 ? String(projects[0].id) : '1');
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +54,7 @@ export const AiAssistantPage: React.FC = () => {
 
     try {
       const res = await apiClient.post<ApiResponse<{ reply: string; actionExecuted: string; data: any }>>(
-        `/ai/projects/${projectId || 1}/chat`,
+        `/ai/projects/${activeProjectId}/chat`,
         { message: currentInput }
       );
 

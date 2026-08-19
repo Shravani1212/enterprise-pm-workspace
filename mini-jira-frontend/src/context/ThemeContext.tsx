@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
-export type Theme = 'light' | 'dark';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setTheme as setThemeAction, toggleTheme as toggleThemeAction, Theme } from '../store/slices/themeSlice';
 
 interface ThemeContextType {
   theme: Theme;
@@ -8,45 +7,18 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('app_theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+export const useTheme = (): ThemeContextType => {
+  const dispatch = useAppDispatch();
+  const theme = useAppSelector((state) => state.theme.theme);
 
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('app_theme', newTheme);
+    dispatch(setThemeAction(newTheme));
   };
 
   const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    dispatch(toggleThemeAction());
   };
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    if (theme === 'dark') {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }, [theme]);
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
-
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return { theme, toggleTheme, setTheme };
 };

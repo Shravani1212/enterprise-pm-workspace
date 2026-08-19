@@ -16,7 +16,10 @@ public class AuthDTOs {
         String usernameOrEmail,
 
         @NotBlank(message = "Password is required")
-        String password
+        String password,
+
+        @NotBlank(message = "Captcha token is required")
+        String captchaToken
     ) {}
 
     public record RegisterRequest(

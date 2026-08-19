@@ -5,7 +5,6 @@ import { TaskFilterState } from '../components/TaskFilterBar';
 export const useTaskFiltersUrlSync = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Parse filters from URL query parameters (URL -> State)
   const filters: TaskFilterState = useMemo(() => {
     return {
       search: searchParams.get('search') || '',

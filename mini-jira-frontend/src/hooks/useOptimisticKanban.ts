@@ -5,7 +5,7 @@ import apiClient from '../services/apiClient';
 interface UseOptimisticKanbanProps {
   initialTasks: Task[];
   statuses: TaskStatus[];
-  enableSimulation?: boolean; // Controls 1.5s latency & 15% random failure simulation
+  enableSimulation?: boolean;
 }
 
 export const useOptimisticKanban = ({
@@ -34,13 +34,13 @@ export const useOptimisticKanban = ({
 
   const moveTask = useCallback(
     async (taskId: number, targetStatusId: number) => {
-      // 1. Save state snapshot before optimistic update
+      // save prev tasks
       const previousTasks = [...tasks];
       const targetStatus = statuses.find((s) => s.id === targetStatusId);
 
       if (!targetStatus) return;
 
-      // 2. Update React UI IMMEDIATELY (Optimistic Update)
+      // Update React UI IMMEDIATELY 
       setTasks((currentTasks) =>
         currentTasks.map((task) =>
           task.id === taskId ? { ...task, status: targetStatus } : task
@@ -48,24 +48,23 @@ export const useOptimisticKanban = ({
       );
 
       try {
-        // 3. Simulated Network Latency & Random Failure (Rule 23 Requirement)
-        if (enableSimulation) {
-          await new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5s simulated latency
 
-          const isSimulatedFailure = Math.random() < 0.15; // 15% random failure simulation
+        if (enableSimulation) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          const isSimulatedFailure = Math.random() < 0.15;
           if (isSimulatedFailure) {
             throw new Error('Simulated network error during card movement (15% failure simulation)');
           }
         }
 
-        // 4. Send actual API Request to backend
         await apiClient.patch(`/tasks/${taskId}/status`, {
           statusId: targetStatusId,
         });
 
         addToast('success', `Task moved to "${targetStatus.name}"`);
       } catch (err: any) {
-        // 5. ROLLBACK TO PREVIOUS SNAPSHOT ON FAILURE
+
         setTasks(previousTasks);
         const errMsg = err.message || 'Failed to update task status on server';
         addToast('error', `Rollback: ${errMsg}`);

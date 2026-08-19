@@ -4,7 +4,6 @@ import 'react-calendar/dist/Calendar.css';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Project } from '../../types';
 
-// We override some default react-calendar styles here to make it match your theme
 import './DashboardCalendar.css';
 
 interface DashboardCalendarProps {
@@ -19,7 +18,6 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
   onDateSelect,
 }) => {
 
-  // Helper to format Date object into YYYY-MM-DD to match project string dates
   const formatDateLocal = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -27,9 +25,9 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
     return `${y}-${m}-${d}`;
   };
 
-  // This function tells react-calendar what extra HTML to render inside each day box
+  //tells extra events for dated
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
-    // We only want dots on the actual "month" view days
+
     if (view === 'month') {
       const dateStr = formatDateLocal(date);
       const startsToday = projects.some((p) => p.startDate === dateStr);
@@ -58,14 +56,13 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
         <span>Project Events Calendar</span>
       </h2>
 
-      {/* The Third-Party react-calendar component */}
       <Calendar
         onChange={(val) => onDateSelect(val as Date)}
         value={selectedDate}
         tileContent={tileContent}
         className="w-100 border-0 shadow-none bg-transparent"
-        prev2Label={null} // Hide the "double back" arrows
-        next2Label={null} // Hide the "double forward" arrows
+        prev2Label={null}
+        next2Label={null}
       />
     </div>
   );

@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = {RedisRepositoriesAutoConfiguration.class})
 @EnableScheduling
-@EnableJpaRepositories(basePackages = "com.projectpulse.pm")
 public class ProjectPulseApplication {
 
     public static void main(String[] args) {

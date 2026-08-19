@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FolderKanban, 
-  Plus, 
-  Search, 
-  Calendar, 
-  Users, 
-  Edit3, 
-  Trash2, 
-  ArrowRight, 
+import {
+  FolderKanban,
+  Plus,
+  Search,
+  Calendar,
+  Users,
+  Edit3,
+  Trash2,
+  ArrowRight,
   X,
   Zap,
   Target,
@@ -91,7 +91,9 @@ export const ProjectsOverviewPage: React.FC = () => {
         setAllUsers(allUsersRes.data.data);
       }
     } catch (err: any) {
-      // If error, keep empty array
+      setProjects([]);
+      setUsers([]);
+      setAllUsers([]);
     } finally {
       setLoading(false);
     }
@@ -101,22 +103,17 @@ export const ProjectsOverviewPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // ── Role Hierarchy Flags ──────────────────────────────────────────────
   // ADMIN         : full project CRUD + create/edit/delete/sprint
   // PROJECT_MANAGER: assign project leads & developers to projects only
   // PROJECT_LEAD  : tasks + subtasks + sprint planning (no project CRUD)
   // DEVELOPER     : own assigned tasks + subtasks only
   const isAdmin = user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') ?? false;
-  const isPm    = user?.roles?.some((r) => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') ?? false;
-  const isLead  = user?.roles?.some((r) => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') ?? false;
+  const isPm = user?.roles?.some((r) => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') ?? false;
+  const isLead = user?.roles?.some((r) => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') ?? false;
 
-  // Only Admin can create / edit / delete projects
   const canManageProjects = isAdmin;
-  // Only ADMIN can plan sprints — Developers and Project Leads cannot
   const canPlanSprint = isAdmin;
-  // Only ADMIN can assign members to projects (including assigning PM)
   const canAssignMembers = isAdmin;
-  // Legacy alias kept for member-management pages
   const isAdminOrPm = isAdmin || isPm || isLead;
 
   const projectManagers = useMemo(() => {
@@ -191,7 +188,7 @@ export const ProjectsOverviewPage: React.FC = () => {
               userId: Number(formData.managerId),
               roleCode: 'PROJECT_MANAGER',
             });
-          } catch (err) {}
+          } catch (err) { }
         }
         showSuccessAlert('Project Created', `Project "${formData.name}" created and Project Manager assigned successfully.`);
         setIsCreateModalOpen(false);
@@ -324,12 +321,13 @@ export const ProjectsOverviewPage: React.FC = () => {
           // If successful and role is Developer or Lead, trigger email
           if (res.data?.success && res.data?.data) {
             const addedMember = res.data.data;
-            if (addedMember.role.code === 'DEVELOPER' || addedMember.role.code === 'PROJECT_LEAD') {
+            const assignedRoleCode = String(addedMember.projectRole || addedMember.role?.code || '').toUpperCase();
+            if (assignedRoleCode.includes('DEVELOPER') || assignedRoleCode.includes('PROJECT_LEAD')) {
               sendProjectAssignmentEmail(
                 addedMember.user.email,
                 addedMember.user.firstName + ' ' + addedMember.user.lastName,
-                addedMember.project.name,
-                addedMember.role.code
+                addedMember.project?.name || selectedProject.name,
+                assignedRoleCode
               );
             }
           }
@@ -361,7 +359,7 @@ export const ProjectsOverviewPage: React.FC = () => {
       );
 
       const results = await Promise.allSettled([...addPromises, ...removePromises, ...updatePromises]);
-      
+
       const succeeded = results.filter((r) => r.status === 'fulfilled').length;
       const failed = results.filter((r) => r.status === 'rejected').length;
 
@@ -434,9 +432,9 @@ export const ProjectsOverviewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
+
       <div className="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
-        {/* Search Bar */}
+
         <div className="input-group input-group-sm w-100" style={{ maxWidth: '320px' }}>
           <span className="input-group-text bg-white border-end-0 text-muted rounded-start-3">
             <Search style={{ width: '14px', height: '14px' }} />
@@ -450,15 +448,13 @@ export const ProjectsOverviewPage: React.FC = () => {
           />
         </div>
 
-        {/* Status Filter Tabs */}
         <ul className="nav nav-pills bg-light p-1 rounded-3 border">
           {['ALL', 'ACTIVE', 'COMPLETED', 'ARCHIVED'].map((st) => (
             <li className="nav-item" key={st}>
               <button
                 onClick={() => setStatusFilter(st)}
-                className={`nav-link btn-sm py-1 px-3 fw-bold rounded-2 ${
-                  statusFilter === st ? 'active bg-white text-dark shadow-xs' : 'text-secondary'
-                }`}
+                className={`nav-link btn-sm py-1 px-3 fw-bold rounded-2 ${statusFilter === st ? 'active bg-white text-dark shadow-xs' : 'text-secondary'
+                  }`}
                 style={{ fontSize: '0.75rem' }}
               >
                 {st}
@@ -468,9 +464,8 @@ export const ProjectsOverviewPage: React.FC = () => {
         </ul>
       </div>
 
-      {/* Projects Grid split with Calendar Widget: Calendar Left, Projects Right */}
       <div className="row g-4 mb-5">
-        {/* Left Column: Calendar Widget */}
+
         <div className="col-12 col-lg-4 animate-fade-in">
           <DashboardCalendar
             projects={projects}
@@ -479,7 +474,6 @@ export const ProjectsOverviewPage: React.FC = () => {
           />
         </div>
 
-        {/* Right Column: Projects & Events */}
         <div className="col-12 col-lg-8">
           {loading ? (
             <LoadingSpinner message="Loading workspace projects..." />
@@ -516,9 +510,8 @@ export const ProjectsOverviewPage: React.FC = () => {
                           {project.code}
                         </span>
                         <span
-                          className={`badge rounded-pill px-2.5 py-1 fw-bold ${
-                            project.status === 'ACTIVE' ? 'badge-subtle-success' : 'bg-light text-secondary border'
-                          }`}
+                          className={`badge rounded-pill px-2.5 py-1 fw-bold ${project.status === 'ACTIVE' ? 'badge-subtle-success' : 'bg-light text-secondary border'
+                            }`}
                           style={{ fontSize: '0.68rem' }}
                         >
                           {project.status}
@@ -581,10 +574,9 @@ export const ProjectsOverviewPage: React.FC = () => {
                         })()}
                       </div>
 
-                      {/* Action Buttons */}
                       <div className="d-flex align-items-center justify-content-between pt-1">
                         <button
-                          onClick={() => navigate(`/projects/${project.id}/board`)}
+                          onClick={() => navigate(`/projects/${project.code}/board`)}
                           className="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 d-flex align-items-center gap-1"
                           style={{ fontSize: '0.8rem' }}
                         >
@@ -645,7 +637,7 @@ export const ProjectsOverviewPage: React.FC = () => {
             </div>
           )}
 
-          {/* Events Section below Projects (Only displayed if there are events starting/ending on selectedDate) */}
+
           {(() => {
             const formatDateLocal = (date: Date) => {
               const y = date.getFullYear();
@@ -658,7 +650,7 @@ export const ProjectsOverviewPage: React.FC = () => {
             const ends = projects.filter(p => p.endDate === dateStr);
             const hasEvents = starts.length > 0 || ends.length > 0;
 
-            if (!hasEvents) return null; // hides completely if no events
+            if (!hasEvents) return null;
 
             return (
               <div className="card card-glass border-0 rounded-4 shadow-sm p-4 mt-4 animate-fade-in">
@@ -671,7 +663,7 @@ export const ProjectsOverviewPage: React.FC = () => {
                   {starts.map(p => (
                     <div
                       key={`start-${p.id}`}
-                      onClick={() => navigate(`/projects/${p.id}/board`)}
+                      onClick={() => navigate(`/projects/${p.code}/board`)}
                       className="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-20 cursor-pointer hover-shadow transition-all d-flex align-items-center justify-content-between"
                     >
                       <div className="min-w-0">
@@ -686,7 +678,7 @@ export const ProjectsOverviewPage: React.FC = () => {
                   {ends.map(p => (
                     <div
                       key={`end-${p.id}`}
-                      onClick={() => navigate(`/projects/${p.id}/board`)}
+                      onClick={() => navigate(`/projects/${p.code}/board`)}
                       className="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-20 cursor-pointer hover-shadow transition-all d-flex align-items-center justify-content-between"
                     >
                       <div className="min-w-0">
@@ -705,7 +697,6 @@ export const ProjectsOverviewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Create Project Modal */}
       {isCreateModalOpen && (
         <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -999,7 +990,6 @@ export const ProjectsOverviewPage: React.FC = () => {
         </div>
       )}
 
-      {/* Assign Members Modal (PROJECT_MANAGER multiselect) */}
       {isAssignModalOpen && selectedProject && (
         <div className="modal fade show d-block animate-fade-in" tabIndex={-1} style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1055 }}>
           <div className="modal-dialog modal-dialog-centered modal-md">
@@ -1053,9 +1043,8 @@ export const ProjectsOverviewPage: React.FC = () => {
                         <div
                           key={u.id}
                           onClick={() => toggleUserSelection(u.id)}
-                          className={`d-flex align-items-center justify-content-between p-2 rounded-2 mb-1 cursor-pointer transition-all ${
-                            isSelected ? 'bg-primary bg-opacity-10 border border-primary border-opacity-25' : 'bg-white border hover-bg-light'
-                          }`}
+                          className={`d-flex align-items-center justify-content-between p-2 rounded-2 mb-1 cursor-pointer transition-all ${isSelected ? 'bg-primary bg-opacity-10 border border-primary border-opacity-25' : 'bg-white border hover-bg-light'
+                            }`}
                           style={{ fontSize: '0.8rem' }}
                         >
                           <div className="d-flex align-items-center gap-3">

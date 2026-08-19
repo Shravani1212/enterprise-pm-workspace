@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { AppRoutes } from './routes/appRoutes';
+import { useAppDispatch } from './store/hooks';
+import { fetchCurrentUser } from './store/slices/authSlice';
 
 export default function App() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    // Check auth status on mount
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
+
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { 
-  FolderKanban, 
-  LayoutDashboard, 
-  GanttChartSquare, 
-  Users, 
-  LogOut, 
+import {
+  FolderKanban,
+  LayoutDashboard,
+  GanttChartSquare,
+  Users,
+  LogOut,
   User as UserIcon,
   ChevronUp,
   Layers,
@@ -26,21 +26,21 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { projectId } = useParams();
+  const { projectCode } = useParams();
   const location = useLocation();
-  const [firstProjectId, setFirstProjectId] = useState<string>('1');
+  const [firstProjectCode, setFirstProjectCode] = useState<string>('1');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
     apiClient.get('/projects').then((res) => {
       if (res.data?.success && res.data?.data?.length > 0) {
-        setFirstProjectId(String(res.data.data[0].id));
+        setFirstProjectCode(String(res.data.data[0].code));
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
-  const activeProjectId = projectId || firstProjectId;
+  const activeProjectCode = projectCode || firstProjectCode;
 
   const handleLogoutClick = async () => {
     const confirmed = await showConfirmAlert(
@@ -60,201 +60,193 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         <div className="sidebar-backdrop d-lg-none" onClick={onClose} />
       )}
 
-      <aside 
-        className={`bg-white border-end d-flex flex-column justify-between vh-100 sticky-top sidebar-responsive ${isOpen ? 'show' : ''}`} 
+      <aside
+        className={`bg-white border-end d-flex flex-column justify-between vh-100 sticky-top sidebar-responsive ${isOpen ? 'show' : ''}`}
         style={{ width: '260px', flexShrink: 0 }}
       >
-      <div>
-        {/* Brand Header */}
-        <div className="p-3.5 border-bottom d-flex align-items-center justify-content-center text-center">
-          <div className="d-flex flex-column align-items-center">
-            <img src="/assets/logo.png" alt="ProjectPulse Logo" style={{ height: '48px', objectFit: 'contain' }} className="mb-1" />
-            <span className="badge badge-subtle-primary rounded-pill px-2 py-0.5" style={{ fontSize: '0.62rem' }}>
-              Workspace v1.0
-            </span>
-          </div>
-        </div>
-
-        {/* Navigation Section */}
-        <div className="px-3 py-4">
-          <div className="px-2 mb-2 text-uppercase fw-bold text-muted" style={{ fontSize: '0.68rem', letterSpacing: '0.05em' }}>
-            Workspace
+        <div>
+          {/* Brand Header */}
+          <div className="p-3.5 border-bottom d-flex align-items-center justify-content-center text-center">
+            <div className="d-flex flex-column align-items-center">
+              <img src="/assets/logo.png" alt="ProjectPulse Logo" style={{ height: '48px', objectFit: 'contain' }} className="mb-1" />
+              <span className="badge badge-subtle-primary rounded-pill px-2 py-0.5" style={{ fontSize: '0.62rem' }}>
+                Workspace v1.0
+              </span>
+            </div>
           </div>
 
-          <nav className="nav nav-pills flex-column gap-1">
-            {!user?.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER') && (
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                    isActive
+          <div className="px-3 py-4">
+            <div className="px-2 mb-2 text-uppercase fw-bold text-muted" style={{ fontSize: '0.68rem', letterSpacing: '0.05em' }}>
+              Workspace
+            </div>
+
+            <nav className="nav nav-pills flex-column gap-1">
+              {!user?.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER') && (
+                <NavLink
+                  to="/dashboard"
+                  className={({ isActive }) =>
+                    `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${isActive
                       ? 'bg-gradient-primary text-white shadow-sm'
                       : 'text-secondary hover-bg-light'
+                    }`
+                  }
+                >
+                  <LayoutDashboard style={{ width: '18px', height: '18px' }} />
+                  <span>Role Dashboard</span>
+                </NavLink>
+              )}
+
+              <NavLink
+                to="/projects"
+                end
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
                   }`
                 }
               >
-                <LayoutDashboard style={{ width: '18px', height: '18px' }} />
-                <span>Role Dashboard</span>
+                <Layers style={{ width: '18px', height: '18px' }} />
+                <span>Projects & Sprints</span>
               </NavLink>
-            )}
 
-            <NavLink
-              to="/projects"
-              end
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isActive
-                    ? 'bg-gradient-primary text-white shadow-sm'
-                    : 'text-secondary hover-bg-light'
-                }`
-              }
-            >
-              <Layers style={{ width: '18px', height: '18px' }} />
-              <span>Projects & Sprints</span>
-            </NavLink>
-
-            <NavLink
-              to={`/projects/${activeProjectId}/board${location.search}`}
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isActive
-                    ? 'bg-gradient-primary text-white shadow-sm'
-                    : 'text-secondary hover-bg-light'
-                }`
-              }
-            >
-              <FolderKanban style={{ width: '18px', height: '18px' }} />
-              <span>Kanban Board</span>
-            </NavLink>
-
-            <NavLink
-              to={`/projects/${activeProjectId}/gantt${location.search}`}
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isActive
-                    ? 'bg-gradient-primary text-white shadow-sm'
-                    : 'text-secondary hover-bg-light'
-                }`
-              }
-            >
-              <GanttChartSquare style={{ width: '18px', height: '18px' }} />
-              <span>Gantt Timeline</span>
-            </NavLink>
-
-            <NavLink
-              to={`/projects/${activeProjectId}/members`}
-              className={({ isActive }) =>
-                `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                  isActive
-                    ? 'bg-gradient-primary text-white shadow-sm'
-                    : 'text-secondary hover-bg-light'
-                }`
-              }
-            >
-              <Users style={{ width: '18px', height: '18px' }} />
-              <span>Project Members</span>
-            </NavLink>
-
-            {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
               <NavLink
-                to="/users"
+                to={`/projects/${activeProjectCode}/board${location.search}`}
                 className={({ isActive }) =>
-                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${
-                    isActive
-                      ? 'bg-gradient-primary text-white shadow-sm'
-                      : 'text-secondary hover-bg-light'
+                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                  }`
+                }
+              >
+                <FolderKanban style={{ width: '18px', height: '18px' }} />
+                <span>Kanban Board</span>
+              </NavLink>
+
+              <NavLink
+                to={`/projects/${activeProjectCode}/gantt${location.search}`}
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
+                  }`
+                }
+              >
+                <GanttChartSquare style={{ width: '18px', height: '18px' }} />
+                <span>Gantt Timeline</span>
+              </NavLink>
+
+              <NavLink
+                to={`/projects/${activeProjectCode}/members`}
+                className={({ isActive }) =>
+                  `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${isActive
+                    ? 'bg-gradient-primary text-white shadow-sm'
+                    : 'text-secondary hover-bg-light'
                   }`
                 }
               >
                 <Users style={{ width: '18px', height: '18px' }} />
-                <span>User & Roles Admin</span>
+                <span>Project Members</span>
               </NavLink>
-            )}
-          </nav>
-        </div>
-      </div>
 
-      {/* User Footer with Options Menu */}
-      <div className="p-3 border-top position-relative">
-        {/* User Options Popover Menu */}
-        {isMenuOpen && (
-          <div
-            className="position-absolute bg-white rounded-3 border shadow-lg overflow-hidden animate-slide-up p-2 z-3"
-            style={{ bottom: '75px', left: '12px', right: '12px' }}
-          >
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                setIsProfileModalOpen(true);
-              }}
-              className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-dark rounded-2 mb-1"
-            >
-              <UserIcon className="text-primary" style={{ width: '16px', height: '16px' }} />
-              <span className="small">Update Profile</span>
-            </button>
-            <button
-              onClick={() => {
-                toggleTheme();
-              }}
-              className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-dark rounded-2 mb-1"
-            >
-              {theme === 'light' ? (
-                <>
-                  <Moon className="text-primary" style={{ width: '16px', height: '16px' }} />
-                  <span className="small">Dark Theme</span>
-                </>
-              ) : (
-                <>
-                  <Sun className="text-warning" style={{ width: '16px', height: '16px' }} />
-                  <span className="small">Light Theme</span>
-                </>
+              {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
+                <NavLink
+                  to="/users"
+                  className={({ isActive }) =>
+                    `nav-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-sm transition-all ${isActive
+                      ? 'bg-gradient-primary text-white shadow-sm'
+                      : 'text-secondary hover-bg-light'
+                    }`
+                  }
+                >
+                  <Users style={{ width: '18px', height: '18px' }} />
+                  <span>User & Roles Admin</span>
+                </NavLink>
               )}
-            </button>
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                handleLogoutClick();
-              }}
-              className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-danger rounded-2"
-            >
-              <LogOut style={{ width: '16px', height: '16px' }} />
-              <span className="small">Sign Out</span>
-            </button>
+            </nav>
           </div>
-        )}
-
-        <div className="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border">
-          <div
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="d-flex align-items-center gap-2 overflow-hidden cursor-pointer flex-grow-1"
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="rounded-2 bg-gradient-primary text-white fw-bold d-flex align-items-center justify-center small shrink-0" style={{ width: '36px', height: '36px' }}>
-              {user?.firstName?.[0] || 'U'}
-            </div>
-            <div className="text-truncate">
-              <div className="fw-semibold text-dark text-truncate small">
-                {user?.firstName} {user?.lastName}
-              </div>
-              <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>@{user?.username}</div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="btn btn-sm btn-link text-muted p-1 border-0"
-            title="Account Options"
-          >
-            <ChevronUp style={{ width: '16px', height: '16px', transform: isMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-          </button>
         </div>
-      </div>
 
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-      />
-    </aside>
+        <div className="p-3 border-top position-relative">
+
+          {isMenuOpen && (
+            <div
+              className="position-absolute bg-white rounded-3 border shadow-lg overflow-hidden animate-slide-up p-2 z-3"
+              style={{ bottom: '75px', left: '12px', right: '12px' }}
+            >
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsProfileModalOpen(true);
+                }}
+                className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-dark rounded-2 mb-1"
+              >
+                <UserIcon className="text-primary" style={{ width: '16px', height: '16px' }} />
+                <span className="small">Update Profile</span>
+              </button>
+              <button
+                onClick={() => {
+                  toggleTheme();
+                }}
+                className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-dark rounded-2 mb-1"
+              >
+                {theme === 'light' ? (
+                  <>
+                    <Moon className="text-primary" style={{ width: '16px', height: '16px' }} />
+                    <span className="small">Dark Theme</span>
+                  </>
+                ) : (
+                  <>
+                    <Sun className="text-warning" style={{ width: '16px', height: '16px' }} />
+                    <span className="small">Light Theme</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleLogoutClick();
+                }}
+                className="btn btn-sm btn-light w-100 text-start d-flex align-items-center gap-2 px-3 py-2 fw-semibold text-danger rounded-2"
+              >
+                <LogOut style={{ width: '16px', height: '16px' }} />
+                <span className="small">Sign Out</span>
+              </button>
+            </div>
+          )}
+
+          <div className="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light border">
+            <div
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="d-flex align-items-center gap-2 overflow-hidden cursor-pointer flex-grow-1"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="rounded-2 bg-gradient-primary text-white fw-bold d-flex align-items-center justify-center small shrink-0" style={{ width: '36px', height: '36px' }}>
+                {user?.firstName?.[0] || 'U'}
+              </div>
+              <div className="text-truncate">
+                <div className="fw-semibold text-dark text-truncate small">
+                  {user?.firstName} {user?.lastName}
+                </div>
+                <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>@{user?.username}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="btn btn-sm btn-link text-muted p-1 border-0"
+              title="Account Options"
+            >
+              <ChevronUp style={{ width: '16px', height: '16px', transform: isMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+          </div>
+        </div>
+
+        <ProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+        />
+      </aside>
     </>
   );
 };

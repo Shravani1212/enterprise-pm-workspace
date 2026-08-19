@@ -4,6 +4,8 @@ import com.projectpulse.pm.common.api.ApiResponse;
 import com.projectpulse.pm.modules.ai.service.AiAssistantService;
 import com.projectpulse.pm.modules.ai.service.AiAssistantService.ChatRequest;
 import com.projectpulse.pm.modules.ai.service.AiAssistantService.ChatResponse;
+import com.projectpulse.pm.security.annotation.RequireProjectAccess;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +18,9 @@ public class AiAssistantController {
     private final AiAssistantService aiAssistantService;
 
     @PostMapping("/projects/{projectId}/chat")
-    @com.projectpulse.pm.security.annotation.RequireProjectAccess(paramName = "projectId")
-    public ResponseEntity<ApiResponse<ChatResponse>> processChat(@PathVariable("projectId") Long projectId, @RequestBody ChatRequest request) {
+    @RequireProjectAccess(paramName = "projectId")
+    public ResponseEntity<ApiResponse<ChatResponse>> processChat(@PathVariable("projectId") Long projectId,
+            @RequestBody ChatRequest request) {
         return ResponseEntity.ok(ApiResponse.success(aiAssistantService.processUserPrompt(projectId, request)));
     }
 }

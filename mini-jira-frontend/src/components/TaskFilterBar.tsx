@@ -60,7 +60,6 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
           />
         </div>
 
-        {/* Priority Dropdown matching Image mock */}
         <div className="bg-light border rounded-4 px-3 py-1.5" style={{ minWidth: '150px' }}>
           <select
             value={filters.priorityId}
@@ -77,7 +76,6 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
           </select>
         </div>
 
-        {/* Assignee Dropdown matching Image mock */}
         <div className="bg-light border rounded-4 px-3 py-1.5" style={{ minWidth: '150px' }}>
           <select
             value={filters.assigneeId}
@@ -94,7 +92,6 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
           </select>
         </div>
 
-        {/* Status Dropdown */}
         <div className="bg-light border rounded-4 px-3 py-1.5" style={{ minWidth: '140px' }}>
           <select
             value={filters.statusId}
@@ -111,7 +108,6 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
           </select>
         </div>
 
-        {/* Reset Filters Button */}
         {hasActiveFilters && (
           <button
             onClick={onResetFilters}

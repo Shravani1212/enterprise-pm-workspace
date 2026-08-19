@@ -26,18 +26,43 @@ export function getFriendlyError(err: any): string {
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api/v1',
-  withCredentials: true, // Automatically includes HttpOnly cookies on every request
+  withCredentials: true, 
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+let isRefreshing = false;
+let failedQueue: { resolve: (value?: unknown) => void, reject: (reason?: any) => void }[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login')) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         // Direct call to refresh endpoint; browser automatically sends HttpOnly jwt_refresh_token cookie
@@ -50,12 +75,15 @@ apiClient.interceptors.response.use(
           }
         );
 
-        if (res.data.success) {
-          // Token refreshed successfully via HttpOnly cookies
+        if (res.data.success && res.data.data) {
+          processQueue(null, res.data.data.accessToken);
           return apiClient(originalRequest);
         }
       } catch (refreshErr) {
+        processQueue(refreshErr, null);
         window.location.href = '/login';
+      } finally {
+        isRefreshing = false;
       }
     }
 

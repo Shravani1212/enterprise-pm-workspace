@@ -12,14 +12,21 @@ import GlobalDataTable, { DataTableColumn } from '../components/common/GlobalDat
 import { sendProjectAssignmentEmail } from '../services/emailService';
 
 export const ProjectMembersPage: React.FC = () => {
-  const { projectId } = useParams();
-  const activeProjectId = projectId || '1';
+  const { projectCode } = useParams();
   const { user: currentUser } = useAuth();
   
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
   // Toggle between card grid and data-table view
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+  const [projects, setProjects] = useState<any[]>([]);
+  const [assignmentProjectId, setAssignmentProjectId] = useState<string>('');
+
+  const activeProject = projects.find(p => p.code === projectCode);
+  const activeProjectId = activeProject ? String(activeProject.id) : (projects.length > 0 ? String(projects[0].id) : '');
+  const routeProjectId = projectCode ? String(activeProject?.id ?? '') : '';
 
   // Add Member Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -30,29 +37,80 @@ export const ProjectMembersPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState('');
 
-  const fetchMembers = async () => {
+  const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [membersRes, usersRes] = await Promise.all([
-        apiClient.get<ApiResponse<ProjectMember[]>>(`/projects/${activeProjectId}/members`),
+      const [usersRes, projectsRes] = await Promise.all([
         apiClient.get<ApiResponse<any[]>>('/users'),
+        apiClient.get<ApiResponse<any[]>>('/projects'),
       ]);
-      if (membersRes.data.success && membersRes.data.data) {
-        setMembers(membersRes.data.data);
-      }
       if (usersRes.data.success && usersRes.data.data) {
         setAllUsers(usersRes.data.data);
       }
+      if (projectsRes.data.success && projectsRes.data.data) {
+        setProjects(projectsRes.data.data);
+      }
     } catch (err: any) {
-      setMembers([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMembers();
-  }, [activeProjectId]);
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (projects.length === 0) return;
+
+    if (routeProjectId) {
+      setAssignmentProjectId((prev) => prev || routeProjectId);
+    } else if (!assignmentProjectId && projects[0]) {
+      setAssignmentProjectId(String(projects[0].id));
+    }
+  }, [projects, routeProjectId, assignmentProjectId]);
+
+  useEffect(() => {
+    if (routeProjectId) {
+      const fetchRouteProjectMembers = async () => {
+        try {
+          const res = await apiClient.get<ApiResponse<ProjectMember[]>>(`/projects/${routeProjectId}/members`);
+          if (res.data.success && res.data.data) {
+            setMembers(res.data.data);
+          } else {
+            setMembers([]);
+          }
+        } catch (err) {
+          setMembers([]);
+        }
+      };
+      fetchRouteProjectMembers();
+    }
+  }, [routeProjectId]);
+
+  useEffect(() => {
+    if (selectedProjectId !== 'all') {
+      const fetchProjectMembers = async () => {
+        setLoading(true);
+        try {
+          const res = await apiClient.get<ApiResponse<ProjectMember[]>>(`/projects/${selectedProjectId}/members`);
+          if (res.data.success && res.data.data) {
+            setMembers(res.data.data);
+          } else {
+            setMembers([]);
+          }
+        } catch (err) {
+          setMembers([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProjectMembers();
+      setAssignmentProjectId(selectedProjectId);
+    } else {
+      setLoading(false);
+    }
+  }, [selectedProjectId]);
 
   const isAdminOrPm = currentUser?.roles?.some((r) => r === 'ADMIN' || r === 'PROJECT_MANAGER');
 
@@ -60,6 +118,12 @@ export const ProjectMembersPage: React.FC = () => {
     e.preventDefault();
     if (selectedUserIds.length === 0) {
       showErrorAlert('Missing Users', 'Please select at least one user');
+      return;
+    }
+
+    const targetProjectId = assignmentProjectId || selectedProjectId;
+    if (!targetProjectId || targetProjectId === 'all') {
+      showErrorAlert('Project Required', 'Please choose a project before assigning members.');
       return;
     }
 
@@ -74,7 +138,7 @@ export const ProjectMembersPage: React.FC = () => {
           payload.leadId = Number(selectedLeadId);
         }
         return apiClient.post<ApiResponse<ProjectMember>>(
-          `/projects/${activeProjectId}/members`,
+          `/projects/${targetProjectId}/members`,
           payload
         );
       });
@@ -82,15 +146,16 @@ export const ProjectMembersPage: React.FC = () => {
       const results = await Promise.all(promises);
 
       // Trigger Email Notifications for Developers and Leads
-      results.forEach((res, index) => {
+      results.forEach((res) => {
         if (res.data?.success && res.data?.data) {
           const addedMember = res.data.data;
-          if (addedMember.role.code === 'DEVELOPER' || addedMember.role.code === 'PROJECT_LEAD') {
+          const assignedRoleCode = String(addedMember.projectRole || addedMember.role?.code || '').toUpperCase();
+          if (assignedRoleCode.includes('DEVELOPER') || assignedRoleCode.includes('PROJECT_LEAD')) {
             sendProjectAssignmentEmail(
               addedMember.user.email,
               addedMember.user.firstName + ' ' + addedMember.user.lastName,
-              addedMember.project.name,
-              addedMember.role.code
+              addedMember.project?.name || addedMember.project || 'the project',
+              assignedRoleCode
             );
           }
         }
@@ -101,7 +166,14 @@ export const ProjectMembersPage: React.FC = () => {
       setSelectedUserIds([]);
       setSearchTerm('');
       setSelectedLeadId('');
-      fetchMembers();
+      if (selectedProjectId !== 'all') {
+        const res = await apiClient.get<ApiResponse<ProjectMember[]>>(`/projects/${selectedProjectId}/members`);
+        if (res.data.success && res.data.data) setMembers(res.data.data);
+      } else if (assignmentProjectId && assignmentProjectId !== 'all') {
+        const res = await apiClient.get<ApiResponse<ProjectMember[]>>(`/projects/${assignmentProjectId}/members`);
+        if (res.data.success && res.data.data) setMembers(res.data.data);
+      }
+
     } catch (err: any) {
       showErrorAlert('Assignment Failed', getFriendlyError(err));
     } finally {
@@ -118,9 +190,14 @@ export const ProjectMembersPage: React.FC = () => {
 
     if (confirmed) {
       try {
-        await apiClient.delete(`/projects/${activeProjectId}/members/${member.user.id}`);
+        const targetProjectId = selectedProjectId === 'all' ? (assignmentProjectId || activeProjectId) : selectedProjectId;
+        await apiClient.delete(`/projects/${targetProjectId}/members/${member.user.id}`);
         showSuccessAlert('Member Removed', `${member.user.firstName} removed from project.`);
-        fetchMembers();
+        if (selectedProjectId !== 'all') {
+          const res = await apiClient.get<ApiResponse<ProjectMember[]>>(`/projects/${selectedProjectId}/members`);
+          if (res.data.success && res.data.data) setMembers(res.data.data);
+        }
+
       } catch (err: any) {
         showErrorAlert('Removal Failed', getFriendlyError(err));
       }
@@ -137,6 +214,16 @@ export const ProjectMembersPage: React.FC = () => {
         return 'bg-primary bg-opacity-10 text-primary border-primary border-opacity-25';
     }
   };
+
+  const displayList = selectedProjectId === 'all' 
+    ? allUsers.map(u => ({
+        id: u.id,
+        user: u,
+        projectRole: u.roles?.[0] || 'USER',
+        joinedAt: u.createdAt || new Date().toISOString(),
+        lead: undefined
+      })) as any[]
+    : members;
 
   // Column definitions for the table view
   const memberColumns: DataTableColumn<ProjectMember>[] = [
@@ -197,7 +284,7 @@ export const ProjectMembersPage: React.FC = () => {
       label: 'Actions',
       noExport: true,
       render: (m: ProjectMember) => (
-        m.user?.id !== currentUser?.id ? (
+        selectedProjectId !== 'all' && m.user?.id !== currentUser?.id ? (
           <button
             onClick={() => handleRemoveMember(m)}
             className="btn btn-sm btn-light text-danger border-0 p-1 px-2 rounded-2 d-flex align-items-center gap-1"
@@ -206,7 +293,7 @@ export const ProjectMembersPage: React.FC = () => {
             <Trash2 style={{ width: '13px', height: '13px' }} />
             <span>Remove</span>
           </button>
-        ) : <span className="text-muted small">You</span>
+        ) : selectedProjectId === 'all' ? null : <span className="text-muted small">You</span>
       ),
     }] : []),
   ];
@@ -240,7 +327,7 @@ export const ProjectMembersPage: React.FC = () => {
             <div className="d-flex align-items-center gap-2 mb-1">
               <h1 className="h4 fw-bold mb-0 text-dark">Project Members &amp; Team</h1>
               <span className="badge badge-subtle-primary rounded-pill px-3 py-1" style={{ fontSize: '0.75rem' }}>
-                {members.length} Active Members
+                {displayList.length} Active {selectedProjectId === 'all' ? 'Users' : 'Members'}
               </span>
             </div>
             <p className="small text-muted mb-0">
@@ -250,6 +337,18 @@ export const ProjectMembersPage: React.FC = () => {
 
           {/* View toggle + Add button */}
           <div className="d-flex align-items-center gap-2">
+            <select
+               className="form-select form-select-sm shadow-none border rounded-3"
+               value={selectedProjectId}
+               onChange={(e) => setSelectedProjectId(e.target.value)}
+               style={{ width: '200px', fontSize: '0.85rem' }}
+            >
+               <option value="all">All Users</option>
+               {projects.map(p => (
+                 <option key={p.id} value={p.id}>{p.name}</option>
+               ))}
+            </select>
+            
             {/* Grid / Table view toggle */}
             <div className="btn-group btn-group-sm" role="group" aria-label="View mode">
               <button
@@ -293,8 +392,8 @@ export const ProjectMembersPage: React.FC = () => {
 
       {/* Members Grid / Table View */}
       {loading ? (
-        <LoadingSpinner message="Loading project members..." />
-      ) : members.length === 0 ? (
+        <LoadingSpinner message="Loading..." />
+      ) : displayList.length === 0 ? (
         <div className="card card-glass p-5 rounded-4 text-center border-0 shadow-sm">
           <Users className="text-muted mb-3 mx-auto" style={{ width: '48px', height: '48px', opacity: 0.5 }} />
           <h5 className="fw-bold text-dark mb-1">No Members Assigned</h5>
@@ -312,15 +411,15 @@ export const ProjectMembersPage: React.FC = () => {
         /* ── Table view via GlobalDataTable ── */
         <GlobalDataTable<ProjectMember>
           id="members-data-table"
-          title="Project Members"
+          title={selectedProjectId === 'all' ? "All Users" : "Project Members"}
           columns={memberColumns}
-          data={members}
+          data={displayList}
           exportFileName="project_members"
           actions={addMemberBtn}
         />
       ) : (
         <div className="row g-3">
-          {members.map((m) => (
+          {displayList.map((m) => (
             <div key={m.id} className="col-12 col-md-6 col-lg-4">
               <div className="card card-hover-lift border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
                 <div className="d-flex align-items-start justify-content-between mb-3">
@@ -363,7 +462,7 @@ export const ProjectMembersPage: React.FC = () => {
                   )}
                 </div>
 
-                {isAdminOrPm && m.user?.id !== currentUser?.id && (
+                {isAdminOrPm && selectedProjectId !== 'all' && m.user?.id !== currentUser?.id && (
                   <div className="pt-3 mt-2 border-top d-flex justify-content-end">
                     <button
                       onClick={() => handleRemoveMember(m)}
@@ -457,6 +556,28 @@ export const ProjectMembersPage: React.FC = () => {
                         );
                       })
                     )}
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.7rem' }}>
+                    Target Project
+                  </label>
+                  <div className="input-group">
+                    <span className="input-group-text bg-light border-end-0 text-muted">
+                      <Users style={{ width: '16px', height: '16px' }} />
+                    </span>
+                    <select
+                      value={assignmentProjectId}
+                      onChange={(e) => setAssignmentProjectId(e.target.value)}
+                      className="form-select bg-light rounded-end-3 shadow-none text-sm border-start-0"
+                    >
+                      {projects.map((p) => (
+                        <option key={p.id} value={String(p.id)}>
+                          {p.name} ({p.code})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

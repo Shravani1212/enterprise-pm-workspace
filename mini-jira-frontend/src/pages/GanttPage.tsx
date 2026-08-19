@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import apiClient from '../services/apiClient';
@@ -10,18 +10,29 @@ import { useDebounce } from '../hooks/useDebounce';
 import { RefreshCw } from 'lucide-react';
 
 export const GanttPage: React.FC = () => {
-  const { projectId } = useParams();
-  const activeProjectId = projectId || '1';
+  const { projectCode } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [firstProjectCode, setFirstProjectCode] = useState<string>('1');
+  const [projects, setProjects] = useState<any[]>([]);
 
-  // 1. Two-way URL Sync Hook
+  React.useEffect(() => {
+    apiClient.get('/projects').then((res) => {
+      if (res.data?.success && res.data?.data?.length > 0) {
+        setProjects(res.data.data);
+        setFirstProjectCode(String(res.data.data[0].code));
+      }
+    }).catch(() => { });
+  }, []);
+
+  const activeProject = projects.find((p: any) => p.code === projectCode);
+  const activeProjectId = activeProject ? String(activeProject.id) : (projects.length > 0 ? String(projects[0].id) : '1');
+  const activeProjectCode = activeProject ? activeProject.code : firstProjectCode;
+
   const { filters, setFilters, resetFilters } = useTaskFiltersUrlSync();
 
-  // 2. Debounced search keyword
   const debouncedSearch = useDebounce(filters.search, 350);
 
-  // 3. Fetch Priorities & Statuses & Members for Filter Bar
   const { data: statusesData, isLoading: isStatusesLoading } = useQuery({
     queryKey: ['projects', activeProjectId, 'statuses'],
     queryFn: async () => {
@@ -54,7 +65,6 @@ export const GanttPage: React.FC = () => {
     },
   });
 
-  // 4. Fetch Search & Filtered Tasks Query with keepPreviousData
   const { data: tasksData, isFetching: isTasksFetching } = useQuery({
     queryKey: [
       'projects',
@@ -97,18 +107,17 @@ export const GanttPage: React.FC = () => {
 
   return (
     <div className="container-fluid p-0 d-flex flex-column gap-3">
-      {/* View Header with Dual-View Navigation Toggle */}
+
       <div className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
         <div>
           <div className="d-flex align-items-center gap-3 mb-1">
             <h2 className="h4 fw-bold text-dark mb-0">Gantt Timeline View</h2>
 
-            {/* Dual-View Navigation Tab Bar */}
             <div className="btn-group btn-group-sm bg-white p-1 rounded-3 border shadow-xs">
               <button
                 type="button"
                 onClick={() => {
-                  navigate(`/projects/${activeProjectId}/board${location.search}`);
+                  navigate(`/projects/${activeProjectCode}/board${location.search}`);
                 }}
                 className="btn btn-sm btn-light text-muted hover-text-dark fw-semibold rounded-2 px-3 py-1 text-xs"
               >
@@ -139,7 +148,6 @@ export const GanttPage: React.FC = () => {
         labels={labelsData || []}
       />
 
-      {/* Gantt Chart Component */}
       <GanttChart tasks={tasksData || []} />
     </div>
   );

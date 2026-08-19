@@ -4,15 +4,15 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useQueryClient } from '@tanstack/react-query';
 import { Task, Subtask } from '../../types';
-import { 
+import {
   GripVertical,
-  ChevronRight, 
-  ChevronDown, 
-  Clock, 
-  CheckCircle2, 
-  Circle, 
-  Plus, 
-  Trash2, 
+  ChevronRight,
+  ChevronDown,
+  Clock,
+  CheckCircle2,
+  Circle,
+  Plus,
+  Trash2,
   Edit3,
   FileText,
   Image as ImageIcon
@@ -36,7 +36,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
   const isPm = user?.roles?.some(r => r === 'PROJECT_MANAGER' || r === 'ROLE_PROJECT_MANAGER') ?? false;
   const isLead = user?.roles?.some(r => r === 'PROJECT_LEAD' || r === 'ROLE_PROJECT_LEAD') ?? false;
   const isDev = user?.roles?.some(r => r === 'DEVELOPER' || r === 'ROLE_DEVELOPER') ?? false;
-  
+
   const isAssignedToMe = initialTask.assignee?.username && user?.username && initialTask.assignee.username.toLowerCase() === user.username.toLowerCase();
   const canDrag = !isAdmin && (isPm || isLead || (isDev && isAssignedToMe));
   const [task, setTask] = useState<Task>(initialTask);
@@ -136,7 +136,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
     }
   };
 
-  // Create Subtask Handler — append locally to avoid double-refresh bug
   const handleAddSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -297,6 +296,32 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
     }
   };
 
+  const handleDeleteTask = async () => {
+    const confirmed = await showConfirmAlert(
+      'Delete Task',
+      `Are you sure you want to delete "${task.title}"? This action cannot be undone.`,
+      'Delete Task'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const res = await apiClient.delete(`/tasks/${task.id}`);
+      if (res.data?.success) {
+        queryClient.setQueriesData({ queryKey: ['projects', String(task.projectId), 'tasks'] }, (oldData: any) => {
+          if (!Array.isArray(oldData)) return oldData;
+          return oldData.filter((t: Task) => t.id !== task.id);
+        });
+        queryClient.invalidateQueries({ queryKey: ['projects', String(task.projectId), 'tasks'] });
+        setIsExpanded(false);
+        showSuccessAlert('Task Deleted', `Task "${task.title}" was deleted successfully.`);
+      }
+    } catch (err: any) {
+      console.error('Failed to delete task', err);
+      showErrorAlert('Delete Failed', err?.response?.data?.message || 'Unable to delete this task.');
+    }
+  };
+
   const subtasksList = task.subtasks || [];
   const completedCount = subtasksList.filter(s => s.completed).length;
   const totalSubtasks = subtasksList.length || task.subtaskCount || 0;
@@ -304,16 +329,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
 
   const timeAgoStr = formatRelativeTime(task.updatedAt || task.createdAt);
 
-  // ── Role Hierarchy in TaskCard ─────────────────────────────────────────
   // ADMIN         : read-only view — no toggles, no add, no delete, no edit
   // PROJECT_MANAGER: full task management (edit, add/delete subtasks, assign)
   // PROJECT_LEAD  : manage subtasks + assign developers
   // DEVELOPER     : toggle own subtask completion; no add/delete
 
-  // Who can add/delete subtasks: Project Manager + Project Lead
   const canManageSubtasks = isPm || isLead || isAdmin;
-  // Who can toggle subtask completion: PM + Lead + Developer + Admin
-  const canToggleSubtask  = isPm || isLead || isDev || isAdmin;
+
+  const canToggleSubtask = isPm || isLead || isDev || isAdmin;
   // Who can open the full edit modal: PM only (and Admin is read-only)
   const canEditTask = isPm;
 
@@ -326,9 +349,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
         ...style,
         borderLeft: `4px solid ${accentColor}`,
       }}
-      className={`card rounded-4 p-3 mb-3 user-select-none transition-all task-card-elevated ${
-        isExpanded ? 'ring-2 ring-primary' : ''
-      }`}
+      className={`card rounded-4 p-3 mb-3 user-select-none transition-all task-card-elevated ${isExpanded ? 'ring-2 ring-primary' : ''
+        }`}
     >
       {/* Top Header Row: Drag Handle + Title + Priority Pill Badge */}
       <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
@@ -369,8 +391,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
           {task.priority?.name || 'MEDIUM'}
         </span>
       </div>
-
-      {/* SLA Alert Badge if escalated or overdue */}
       {(() => {
         const getDaysPending = () => {
           if (task.status?.code === 'DONE') return 0;
@@ -419,12 +439,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
       {/* Subtasks Progress Tracker Row (Only shown if totalSubtasks > 0) */}
       {totalSubtasks > 0 && (
         <div className="mb-2">
-          <div 
+          <div
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="d-flex justify-content-between align-items-center cursor-pointer hover-text-primary text-muted fw-medium mb-1.5" 
+            className="d-flex justify-content-between align-items-center cursor-pointer hover-text-primary text-muted fw-medium mb-1.5"
             style={{ fontSize: '0.76rem' }}
           >
             <span className="d-flex align-items-center gap-1">
@@ -456,7 +476,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
 
       {/* Expand/Collapse Toggle hint if no subtasks exist yet */}
       {totalSubtasks === 0 && (
-        <div 
+        <div
           onClick={(e) => {
             e.stopPropagation();
             setIsExpanded(!isExpanded);
@@ -475,9 +495,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
 
       {/* Expanded Subtask List & Complete Details (Only Shown When Expanded in Modal) */}
       {isExpanded && createPortal(
-        <div 
-          className="modal fade show d-block" 
-          tabIndex={-1} 
+        <div
+          className="modal fade show d-block"
+          tabIndex={-1}
           style={{ backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', zIndex: 1060 }}
           onClick={(e) => {
             e.stopPropagation();
@@ -486,7 +506,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
         >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden bg-white">
-              
+
               {/* Modal Header */}
               <div className="modal-header bg-gradient-dark-header text-white border-0 px-4 py-3 d-flex align-items-center justify-content-between">
                 <div>
@@ -505,9 +525,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
                     </span>
                   </div>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => setIsExpanded(false)} 
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
                   className="btn-close btn-close-white shadow-none animate-scale"
                   aria-label="Close"
                 ></button>
@@ -664,7 +684,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
                                 >
                                   {st.attachmentName}
                                 </a>
-                                
+
                                 {canManageSubtasks && (
                                   <button
                                     type="button"
@@ -726,7 +746,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
                           required
                         />
                       </div>
-                      
+
                       <div className="row g-3">
                         <div className="col-12 col-md-5">
                           <label className="form-label text-uppercase fw-bold text-muted small" style={{ fontSize: '0.65rem' }}>Developer</label>
@@ -779,6 +799,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
                             type="date"
                             value={subtaskDueDate}
                             onChange={(e) => setSubtaskDueDate(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
                             className="form-control form-control-sm bg-white rounded-3 shadow-none text-sm text-dark"
                             required
                           />
@@ -819,19 +840,30 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
 
               {/* Modal Footer */}
               <div className="modal-footer bg-light border-0 px-4 py-3 d-flex justify-content-between">
-                <div>
+                <div className="d-flex align-items-center gap-2">
                   {canEditTask && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsExpanded(false);
-                        onCardClick?.(task);
-                      }}
-                      className="btn btn-sm btn-outline-primary border-dashed rounded-3 px-3 py-2 fw-semibold text-xs d-flex align-items-center gap-1.5 hover-scale transition-all"
-                    >
-                      <Edit3 style={{ width: '14px', height: '14px' }} />
-                      <span>Full Edit Task Modal</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsExpanded(false);
+                          onCardClick?.(task);
+                        }}
+                        className="btn btn-sm btn-outline-primary border-dashed rounded-3 px-3 py-2 fw-semibold text-xs d-flex align-items-center gap-1.5 hover-scale transition-all"
+                      >
+                        <Edit3 style={{ width: '14px', height: '14px' }} />
+                        <span>Full Edit Task Modal</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDeleteTask}
+                        className="btn btn-sm btn-outline-danger rounded-3 px-3 py-2 fw-semibold text-xs d-flex align-items-center gap-1.5 hover-scale transition-all"
+                      >
+                        <Trash2 style={{ width: '14px', height: '14px' }} />
+                        <span>Delete Task</span>
+                      </button>
+                    </>
                   )}
                 </div>
                 <button
@@ -849,9 +881,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
         document.body
       )}
 
-      {/* Card Footer matching Image 1 (Assignee Avatar + Full Name on left, Clock + Timestamp on right) */}
       <div className="d-flex align-items-center justify-content-between pt-2 border-top mt-2">
-        {/* Assignee Avatar Circle + Name matching Image 1 (e.g. SL Sara Lin, JC John Carter) */}
         <div className="d-flex align-items-center gap-1.5">
           {(() => {
             const assigneeMember = members.find(m => m.user?.id === task.assignee?.id);
@@ -879,7 +909,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task: initialTask, onCardCli
           })()}
         </div>
 
-        {/* Timestamp with Clock Icon matching Image 1 (e.g. 15h ago, 1m ago, 10h ago, just now) */}
+        {/* Timestamp with Clock Icon matching Image 1 (e.g.  ago, 1m ago, 10h ago, just now) */}
         <div className="d-flex align-items-center gap-1 text-muted" style={{ fontSize: '0.72rem' }}>
           <Clock style={{ width: '12px', height: '12px' }} />
           <span>{timeAgoStr}</span>

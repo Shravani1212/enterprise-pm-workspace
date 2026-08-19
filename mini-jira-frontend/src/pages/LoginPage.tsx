@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { ApiResponse, AuthResponse } from '../types';
+import ReCAPTCHA from 'react-google-recaptcha';
 import {
   ArrowRight,
   Eye,
@@ -32,6 +33,13 @@ export const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
+
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    recaptchaRef.current?.reset();
+  };
 
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -93,17 +101,23 @@ export const LoginPage: React.FC = () => {
 
   const handlePortalSwitch = (role: RolePortalType) => {
     setActivePortal(role);
-    setError(''); // Clear error on tab switch but do NOT overwrite credentials
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) {
+      setError('Please complete the Captcha verification.');
+      showErrorAlert('Verification Required', 'Please complete the Captcha to sign in.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
       const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', {
         usernameOrEmail,
         password,
+        captchaToken,
       });
       if (res.data.success && res.data.data) {
         login(res.data.data);
@@ -126,6 +140,7 @@ export const LoginPage: React.FC = () => {
       const msg = err.response?.data?.error?.message || 'Login failed. Please check your credentials.';
       setError(msg);
       showErrorAlert('Authentication Error', msg);
+      resetCaptcha();
     } finally {
       setLoading(false);
     }
@@ -268,7 +283,7 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Badge + Description + Accent Button */}
+
               <div className="mb-2">
                 <div className={`badge rounded-pill px-3 py-2 fw-semibold mb-2 d-inline-flex align-items-center gap-2 shadow-xs border ${themeConfig.badgeBg}`}>
                   <span className="badge-glowing-dot"></span>
@@ -364,7 +379,6 @@ export const LoginPage: React.FC = () => {
         </footer>
       </div>
 
-      {/* ── Right-side Login Panel (Aligned beside project heading, theme toggle at bottom) ── */}
       <div
         className="d-flex flex-column justify-content-between p-4"
         style={{
@@ -440,7 +454,6 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Card Header */}
             <div className="text-center mb-4">
               <div
                 className="rounded-circle text-white d-inline-flex align-items-center justify-center p-3 shadow-md mb-3 hover-scale transition-all"
@@ -451,14 +464,13 @@ export const LoginPage: React.FC = () => {
               <h2 className="h5 fw-bold text-dark mb-1">{themeConfig.portalName}</h2>
             </div>
 
-            {/* Error Alert */}
+
             {error && (
               <div className="alert alert-danger rounded-3 p-3 small mb-4 fw-semibold border-danger border-opacity-25 animate-shake" role="alert">
                 {error}
               </div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
               <div>
                 <label className="form-label text-uppercase fw-bold text-muted small mb-1" style={{ fontSize: '0.7rem' }}>
@@ -513,7 +525,7 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="form-check">
+              {/* <div className="form-check">
                 <input
                   type="checkbox"
                   id="rememberMe"
@@ -524,6 +536,22 @@ export const LoginPage: React.FC = () => {
                 <label htmlFor="rememberMe" className="form-check-label text-muted small cursor-pointer">
                   Remember me for 30 days
                 </label>
+              </div> */}
+
+              <div className="d-flex justify-content-center my-2">
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey="6LcWiowtAAAAAC8t4fA-7rwKHO67aX-n8rG7Xgoy"
+                  onChange={(token) => setCaptchaToken(token)}
+                  onExpired={() => {
+                    setCaptchaToken(null);
+                  }}
+                  onErrored={() => {
+                    setCaptchaToken(null);
+                    recaptchaRef.current?.reset();
+                  }}
+                  theme={theme === 'dark' ? 'dark' : 'light'}
+                />
               </div>
 
               <button

@@ -41,10 +41,9 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> getUserProjects(UserPrincipal currentUser) {
-        boolean showAll = currentUser == null || currentUser.getId() == null ||
-                currentUser.getAuthorities().stream().anyMatch(a ->
-                        a.getAuthority().equals("ROLE_ADMIN")
-                );
+        boolean showAll = currentUser.getAuthorities().stream().anyMatch(a ->
+                a.getAuthority().equals("ROLE_ADMIN")
+        );
 
         List<Project> projects = showAll
                 ? projectRepository.findAll()
@@ -132,7 +131,6 @@ public class ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        // 1. Create Project Settings
         ProjectSetting settings = ProjectSetting.builder()
                 .project(savedProject)
                 .allowGuestComments(false)
@@ -140,7 +138,6 @@ public class ProjectService {
                 .build();
         projectSettingsRepository.save(settings);
 
-        // 2. Add creator as PROJECT_MANAGER member
         Role managerRole = roleRepository.findByCode("PROJECT_MANAGER")
                 .orElseGet(() -> roleRepository.save(Role.builder()
                         .code("PROJECT_MANAGER")

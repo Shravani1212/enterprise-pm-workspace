@@ -56,7 +56,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const t1 = setTimeout(checkScroll, 100);
     const t2 = setTimeout(checkScroll, 500);
     const t3 = setTimeout(checkScroll, 1000);
-    
+
     window.addEventListener('resize', checkScroll);
     return () => {
       clearTimeout(t1);
@@ -74,7 +74,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     containerRef.current?.scrollBy({ left: 340, behavior: 'smooth' });
   };
 
-  // Admins get no-op sensors (distance 99999 = effectively disabled)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

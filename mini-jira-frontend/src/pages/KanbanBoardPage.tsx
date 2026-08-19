@@ -15,15 +15,14 @@ import { getFriendlyError } from '../services/apiClient';
 import { RefreshCw, Plus, X, Edit3, Clock, FileText, CheckCircle2, FolderKanban, ChevronDown } from 'lucide-react';
 
 export const KanbanBoardPage: React.FC = () => {
-  const { projectId } = useParams();
+  const { projectCode } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [firstProjectId, setFirstProjectId] = useState<string>('1');
+  const [firstProjectCode, setFirstProjectCode] = useState<string>('1');
   const [projects, setProjects] = useState<Project[]>([]);
   const [modalProjectId, setModalProjectId] = useState<string>('');
 
-  // Modal & form states for Task creation/editing
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [targetStatusId, setTargetStatusId] = useState<number | null>(null);
@@ -42,21 +41,21 @@ export const KanbanBoardPage: React.FC = () => {
     apiClient.get('/projects').then((res) => {
       if (res.data?.success && res.data?.data?.length > 0) {
         setProjects(res.data.data);
-        setFirstProjectId(String(res.data.data[0].id));
+        setFirstProjectCode(String(res.data.data[0].code));
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
-  const activeProjectId = projectId || firstProjectId;
+  const activeProject = projects.find(p => p.code === projectCode);
+  const activeProjectId = activeProject ? String(activeProject.id) : (projects.length > 0 ? String(projects[0].id) : '1');
+  const activeProjectCode = activeProject ? activeProject.code : firstProjectCode;
+  
   const queryProjectId = isTaskModalOpen ? (modalProjectId || activeProjectId) : activeProjectId;
 
-  // 1. Two-way URL Sync Hook
   const { filters, setFilters, resetFilters } = useTaskFiltersUrlSync();
 
-  // 2. Debounced search keyword (350ms)
   const debouncedSearch = useDebounce(filters.search, 350);
 
-  // 3. Fetch Active Project Details (for time frame checks)
   const { data: projectData } = useQuery({
     queryKey: ['projects', queryProjectId],
     queryFn: async () => {
@@ -65,7 +64,6 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  // Fetch Workflow Statuses
   const { data: statusesData, isLoading: isStatusesLoading } = useQuery({
     queryKey: ['projects', queryProjectId, 'statuses'],
     queryFn: async () => {
@@ -74,7 +72,6 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  // 4. Fetch Priorities
   const { data: prioritiesData } = useQuery({
     queryKey: ['priorities'],
     queryFn: async () => {
@@ -83,7 +80,6 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  // 5. Fetch Project Members
   const { data: membersData } = useQuery({
     queryKey: ['projects', queryProjectId, 'members'],
     queryFn: async () => {
@@ -92,7 +88,6 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  // 6. Fetch Project Labels
   const { data: labelsData } = useQuery({
     queryKey: ['projects', queryProjectId, 'labels'],
     queryFn: async () => {
@@ -101,14 +96,12 @@ export const KanbanBoardPage: React.FC = () => {
     },
   });
 
-  // Derive stable filter values for queryKey and queryFn
-  const searchTerm   = debouncedSearch.trim();
-  const priorityVal  = filters.priorityId;
-  const statusVal    = filters.statusId;
-  const assigneeVal  = filters.assigneeId;
-  const labelVal     = filters.labelId;
+  const searchTerm = debouncedSearch.trim();
+  const priorityVal = filters.priorityId;
+  const statusVal = filters.statusId;
+  const assigneeVal = filters.assigneeId;
+  const labelVal = filters.labelId;
 
-  // 7. Search & Filtered Tasks API Query with keepPreviousData for smooth inline card reloading
   const { data: tasksData, isFetching: isTasksFetching, refetch: refetchTasks } = useQuery({
     queryKey: [
       'projects',
@@ -123,11 +116,11 @@ export const KanbanBoardPage: React.FC = () => {
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (searchTerm)   params.set('search',     searchTerm);
-      if (priorityVal)  params.set('priorityId', priorityVal);
-      if (statusVal)    params.set('statusId',   statusVal);
-      if (assigneeVal)  params.set('assigneeId', assigneeVal);
-      if (labelVal)     params.set('labelId',    labelVal);
+      if (searchTerm) params.set('search', searchTerm);
+      if (priorityVal) params.set('priorityId', priorityVal);
+      if (statusVal) params.set('statusId', statusVal);
+      if (assigneeVal) params.set('assigneeId', assigneeVal);
+      if (labelVal) params.set('labelId', labelVal);
 
       const queryString = params.toString();
       const url = queryString
@@ -180,7 +173,7 @@ export const KanbanBoardPage: React.FC = () => {
     setTaskTitle(task.title);
     setTaskDesc(task.description || '');
     setTaskPriorityId(String(task.priority?.id || ''));
-    
+
     const assigneeIdVal = task.assignee?.id ? String(task.assignee.id) : '';
     setTaskAssigneeId(assigneeIdVal);
 
@@ -328,8 +321,7 @@ export const KanbanBoardPage: React.FC = () => {
                 Updating cards...
               </span>
             )}
-
-            {/* Project Switcher — only visible when user has 2+ projects */}
+            {/* //project nav to select */}
             {projects.length > 1 && (
               <div className="d-flex align-items-center gap-2">
                 <div className="position-relative d-flex align-items-center">
@@ -338,7 +330,7 @@ export const KanbanBoardPage: React.FC = () => {
                     style={{ width: '14px', height: '14px', left: '10px', pointerEvents: 'none', zIndex: 1 }}
                   />
                   <select
-                    value={activeProjectId}
+                    value={activeProjectCode}
                     onChange={(e) => {
                       resetFilters();
                       navigate(`/projects/${e.target.value}/board`);
@@ -355,7 +347,7 @@ export const KanbanBoardPage: React.FC = () => {
                     }}
                   >
                     {projects.map((p: any) => (
-                      <option key={p.id} value={String(p.id)}>
+                      <option key={p.id} value={p.code}>
                         [{p.code}] {p.name}
                       </option>
                     ))}
@@ -375,7 +367,7 @@ export const KanbanBoardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  navigate(`/projects/${activeProjectId}/gantt${location.search}`);
+                  navigate(`/projects/${activeProjectCode}/gantt${location.search}`);
                 }}
                 className="btn btn-sm btn-light text-muted hover-text-dark fw-semibold rounded-2 px-3 py-1 text-xs"
               >
@@ -605,7 +597,7 @@ export const KanbanBoardPage: React.FC = () => {
                           className="form-select form-select-sm bg-light rounded-3 shadow-none text-sm fw-semibold"
                         >
                           <option value="">Unassigned</option>
-                           {(membersData || [])
+                          {(membersData || [])
                             .filter(m => {
                               const isDev = m.projectRole?.toUpperCase() === 'DEVELOPER' || m.projectRole?.toUpperCase() === 'ROLE_DEVELOPER';
                               if (isDev) {
