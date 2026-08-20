@@ -60,7 +60,7 @@ app:
     enabled: true
     site-key: "6LdKf48tAAAAAI4oCgbQnFXGD0j0Dq9uEyZqTwCQ"
     secret-key: "6LcWiowtAAAAAJjz5wbn73OfPNdmySx0V707ChXw"
-    verify-url: "6LdKf48tAAAAAAx_pd1kwP1Ile2UFVmbxYPNNp9M"
+    verify-url: "https://www.google.com/recaptcha/api/siteverify"
 logging:
   level:
     root: WARN
