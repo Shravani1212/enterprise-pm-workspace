@@ -541,7 +541,7 @@ export const LoginPage: React.FC = () => {
               <div className="d-flex justify-content-center my-2">
                 <ReCAPTCHA
                   ref={recaptchaRef}
-                  sitekey="6LcWiowtAAAAAC8t4fA-7rwKHO67aX-n8rG7Xgoy"
+                  sitekey="import.meta.env.VITE_RECAPTCHA_SITE_KEY"
                   onChange={(token) => setCaptchaToken(token)}
                   onExpired={() => {
                     setCaptchaToken(null);
