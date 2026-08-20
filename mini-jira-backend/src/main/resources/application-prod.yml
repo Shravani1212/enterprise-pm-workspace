@@ -56,7 +56,11 @@ app:
     refresh-token-expiration-ms: 604800000
   security:
     cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-production-app.vercel.app}
-
+  captcha:
+    enabled: true
+    site-key: "6LdKf48tAAAAAI4oCgbQnFXGD0j0Dq9uEyZqTwCQ"
+    secret-key: "6LcWiowtAAAAAJjz5wbn73OfPNdmySx0V707ChXw"
+    verify-url: "6LdKf48tAAAAAAx_pd1kwP1Ile2UFVmbxYPNNp9M"
 logging:
   level:
     root: WARN
